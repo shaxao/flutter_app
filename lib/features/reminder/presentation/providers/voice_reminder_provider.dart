@@ -4,6 +4,7 @@ import '../../domain/models/voice_reminder.dart';
 import '../../domain/services/voice_reminder_service.dart';
 import '../../data/repositories/voice_reminder_repository.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/reminder_scheduler_service.dart';
 
 class VoiceReminderProvider extends ChangeNotifier {
   final VoiceReminderRepository _repository;
@@ -67,6 +68,9 @@ class VoiceReminderProvider extends ChangeNotifier {
       // Update voice service with current reminders
       _voiceService.updateScheduledReminders(_reminders);
       
+      // 使用新的调度服务调度提醒
+      await ReminderSchedulerService.instance.scheduleReminders(_reminders);
+      
       notifyListeners();
       debugPrint('[VoiceReminderProvider] Loaded ${_reminders.length} reminders');
     } catch (e) {
@@ -99,6 +103,10 @@ class VoiceReminderProvider extends ChangeNotifier {
       final created = await _repository.createReminder(reminder);
       _reminders.add(created);
       _voiceService.updateScheduledReminders(_reminders);
+      
+      // 调度新创建的提醒
+      await ReminderSchedulerService.instance.scheduleReminder(created);
+      
       notifyListeners();
       debugPrint('[VoiceReminderProvider] Created reminder: ${created.content}');
     } catch (e) {
@@ -139,6 +147,11 @@ class VoiceReminderProvider extends ChangeNotifier {
       if (index != -1) {
         _reminders[index] = updated;
         _voiceService.updateScheduledReminders(_reminders);
+        
+        // 重新调度所有提醒
+        ReminderSchedulerService.instance.cancelAllReminders();
+        await ReminderSchedulerService.instance.scheduleReminders(_reminders);
+        
         notifyListeners();
       }
       debugPrint('[VoiceReminderProvider] Updated reminder: ${updated.content}');
@@ -170,6 +183,10 @@ class VoiceReminderProvider extends ChangeNotifier {
       await _repository.deleteReminder(id);
       _reminders.removeWhere((r) => r.id == id);
       _voiceService.updateScheduledReminders(_reminders);
+      
+      // 取消特定提醒的调度
+      ReminderSchedulerService.instance.cancelReminder(id);
+      
       notifyListeners();
       debugPrint('[VoiceReminderProvider] Deleted reminder: $id');
     } catch (e) {
@@ -188,6 +205,10 @@ class VoiceReminderProvider extends ChangeNotifier {
       await _repository.deleteAllReminders();
       _reminders.clear();
       _voiceService.updateScheduledReminders(_reminders);
+      
+      // 取消所有调度的提醒
+      ReminderSchedulerService.instance.cancelAllReminders();
+      
       notifyListeners();
       debugPrint('[VoiceReminderProvider] Deleted all reminders');
     } catch (e) {
@@ -243,6 +264,18 @@ class VoiceReminderProvider extends ChangeNotifier {
     } catch (e) {
       _setError('自定义音频测试失败: $e');
       debugPrint('[VoiceReminderProvider] Custom audio test failed: $e');
+    }
+  }
+  
+  /// 测试提醒调度功能
+  Future<void> testReminderScheduling() async {
+    try {
+      _clearError();
+      await ReminderSchedulerService.instance.testReminder();
+      debugPrint('[VoiceReminderProvider] Reminder scheduling test completed');
+    } catch (e) {
+      _setError('提醒调度测试失败: $e');
+      debugPrint('[VoiceReminderProvider] Reminder scheduling test failed: $e');
     }
   }
 

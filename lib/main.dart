@@ -5,12 +5,15 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/voice_service.dart';
 import 'core/services/api_service.dart';
 import 'core/services/network_service.dart';
+import 'core/services/reminder_scheduler_service.dart';
 import 'features/home/presentation/pages/home_page.dart';
 import 'features/reminder/presentation/providers/voice_reminder_provider.dart';
 
@@ -28,6 +31,15 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化时区数据
+  try {
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Shanghai')); // 设置为中国时区
+    print('✅ 时区初始化成功');
+  } catch (e) {
+    print('❌ 时区初始化失败: $e');
+  }
   
   try {
     // 初始化 Hive
@@ -89,6 +101,14 @@ void main() async {
     print('✅ 语音服务初始化成功');
   } catch (e) {
     print('❌ 语音服务初始化失败: $e');
+  }
+  
+  try {
+    // 初始化提醒调度服务
+    await ReminderSchedulerService.instance.initialize();
+    print('✅ 提醒调度服务初始化成功');
+  } catch (e) {
+    print('❌ 提醒调度服务初始化失败: $e');
   }
   
   // 初始化后台任务 - 只在非 Web 环境

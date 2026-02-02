@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../../../widgets/connection_status_widget.dart';
+import '../../../reminder/presentation/providers/voice_reminder_provider.dart';
 
 /// 设置页面
 class SettingsPage extends StatefulWidget {
@@ -212,6 +214,11 @@ class _SettingsPageState extends State<SettingsPage> {
           title: '清除数据',
           subtitle: '清除所有应用数据',
           onTap: () => _showClearDataDialog(),
+        ),
+        _buildTapSetting(
+          title: '测试提醒功能',
+          subtitle: '测试语音提醒和通知是否正常工作',
+          onTap: () => _testReminderFunction(),
         ),
       ],
     );
@@ -683,5 +690,118 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+  
+  void _testReminderFunction() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('测试提醒功能'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('选择要测试的功能：'),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.notifications),
+              title: const Text('测试系统通知'),
+              subtitle: const Text('立即显示一个测试通知'),
+              onTap: () {
+                Navigator.pop(context);
+                _testSystemNotification();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.volume_up),
+              title: const Text('测试语音播报'),
+              subtitle: const Text('播放测试语音'),
+              onTap: () {
+                Navigator.pop(context);
+                _testVoicePlayback();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('测试提醒调度'),
+              subtitle: const Text('创建一个5秒后的测试提醒'),
+              onTap: () {
+                Navigator.pop(context);
+                _testReminderScheduling();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _testSystemNotification() async {
+    try {
+      final provider = Provider.of<VoiceReminderProvider>(context, listen: false);
+      await provider.testSystemNotification();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 系统通知测试已发送'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 系统通知测试失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  void _testVoicePlayback() async {
+    try {
+      final provider = Provider.of<VoiceReminderProvider>(context, listen: false);
+      await provider.testVoice('这是一个语音测试，VoiceFlow 语音助手正在为您服务');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 语音播报测试已开始'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 语音播报测试失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  void _testReminderScheduling() async {
+    try {
+      final provider = Provider.of<VoiceReminderProvider>(context, listen: false);
+      await provider.testReminderScheduling();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 提醒调度测试已启动，5秒后将收到测试提醒'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 提醒调度测试失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
