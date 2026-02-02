@@ -99,14 +99,12 @@ class ReminderSchedulerService {
       
       // 语音播报
       await VoiceService.instance.speakReminder(
-        type: reminder.type,
+        type: reminder.reminderType.value,
         content: reminder.content,
       );
       
-      // 如果是重复提醒，重新调度下次提醒
-      if (reminder.repeatDays.isNotEmpty) {
-        await scheduleReminder(reminder);
-      }
+      // 注意：当前 VoiceReminder 模型没有 repeatDays 字段
+      // 如果需要重复提醒功能，需要扩展模型
       
     } catch (e) {
       print('❌ 执行提醒失败: $e');
@@ -116,60 +114,33 @@ class ReminderSchedulerService {
   /// 计算下次提醒时间
   DateTime? _calculateNextReminderTime(VoiceReminder reminder) {
     final now = DateTime.now();
-    final reminderTime = reminder.time;
+    final timeParts = reminder.time.split(':');
+    
+    if (timeParts.length != 2) {
+      print('❌ 无效的时间格式: ${reminder.time}');
+      return null;
+    }
+    
+    final hour = int.tryParse(timeParts[0]);
+    final minute = int.tryParse(timeParts[1]);
+    
+    if (hour == null || minute == null) {
+      print('❌ 无法解析时间: ${reminder.time}');
+      return null;
+    }
     
     // 今天的提醒时间
     var nextTime = DateTime(
       now.year,
       now.month,
       now.day,
-      reminderTime.hour,
-      reminderTime.minute,
+      hour,
+      minute,
     );
     
-    // 如果今天的时间已过，检查是否有重复设置
+    // 如果今天的时间已过，设置为明天
     if (nextTime.isBefore(now)) {
-      if (reminder.repeatDays.isEmpty) {
-        // 一次性提醒，时间已过
-        return null;
-      }
-      
-      // 寻找下一个重复日期
-      for (int i = 1; i <= 7; i++) {
-        final checkDate = now.add(Duration(days: i));
-        final weekday = checkDate.weekday;
-        
-        if (reminder.repeatDays.contains(weekday)) {
-          nextTime = DateTime(
-            checkDate.year,
-            checkDate.month,
-            checkDate.day,
-            reminderTime.hour,
-            reminderTime.minute,
-          );
-          break;
-        }
-      }
-    } else {
-      // 今天的时间还没到，检查今天是否在重复日期中
-      if (reminder.repeatDays.isNotEmpty && !reminder.repeatDays.contains(now.weekday)) {
-        // 今天不在重复日期中，寻找下一个重复日期
-        for (int i = 1; i <= 7; i++) {
-          final checkDate = now.add(Duration(days: i));
-          final weekday = checkDate.weekday;
-          
-          if (reminder.repeatDays.contains(weekday)) {
-            nextTime = DateTime(
-              checkDate.year,
-              checkDate.month,
-              checkDate.day,
-              reminderTime.hour,
-              reminderTime.minute,
-            );
-            break;
-          }
-        }
-      }
+      nextTime = nextTime.add(const Duration(days: 1));
     }
     
     return nextTime.isAfter(now) ? nextTime : null;
@@ -183,7 +154,7 @@ class ReminderSchedulerService {
       'reminders': _scheduledReminders.map((r) => {
         'id': r.id,
         'content': r.content,
-        'time': r.time.toString(),
+        'time': r.time,
         'enabled': r.enabled,
       }).toList(),
     };
@@ -196,13 +167,14 @@ class ReminderSchedulerService {
       
       // 创建一个测试提醒（5秒后触发）
       final testTime = DateTime.now().add(const Duration(seconds: 5));
+      final timeString = '${testTime.hour.toString().padLeft(2, '0')}:${testTime.minute.toString().padLeft(2, '0')}';
+      
       final testReminder = VoiceReminder(
         id: 999999,
         content: '这是一个测试提醒',
-        time: testTime,
-        type: 'test',
+        time: timeString,
         enabled: true,
-        repeatDays: [],
+        reminderType: ReminderType.aiVoice,
         createdAt: DateTime.now(),
       );
       

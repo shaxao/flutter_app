@@ -14,10 +14,12 @@ import 'core/services/voice_service.dart';
 import 'core/services/api_service.dart';
 import 'core/services/network_service.dart';
 import 'core/services/reminder_scheduler_service.dart';
-import 'core/services/web_push_service.dart';
 import 'core/services/hybrid_notification_service.dart';
 import 'features/home/presentation/pages/home_page.dart';
 import 'features/reminder/presentation/providers/voice_reminder_provider.dart';
+
+// Conditional import for Web
+import 'dart:html' as html show window, document;
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -90,7 +92,7 @@ void main() async {
   }
   
   try {
-    // 初始化混合通知服务
+    // 初始化混合通知服务（包含完整的 Web Push 系统）
     await HybridNotificationService.instance.initialize();
     print('✅ 混合通知服务初始化成功');
   } catch (e) {
@@ -119,14 +121,6 @@ void main() async {
     print('✅ 提醒调度服务初始化成功');
   } catch (e) {
     print('❌ 提醒调度服务初始化失败: $e');
-  }
-  
-  try {
-    // 初始化 Web Push 服务
-    await WebPushService.instance.initialize();
-    print('✅ Web Push 服务初始化成功');
-  } catch (e) {
-    print('❌ Web Push 服务初始化失败: $e');
   }
   
   // 初始化后台任务 - 只在非 Web 环境
@@ -207,6 +201,40 @@ class _SafeHomePageState extends State<SafeHomePage> {
   void initState() {
     super.initState();
     _initializeApp();
+    
+    // Web 环境：处理 autoSpeak 参数
+    if (kIsWeb) {
+      _handleAutoSpeak();
+    }
+  }
+
+  void _handleAutoSpeak() {
+    try {
+      final uri = Uri.parse(html.window.location.href);
+      final autoSpeak = uri.queryParameters['autoSpeak'];
+      
+      if (autoSpeak != null && autoSpeak.isNotEmpty) {
+        print('🔊 检测到 autoSpeak 参数: $autoSpeak');
+        
+        // 延迟播放，确保语音服务已初始化
+        Future.delayed(const Duration(seconds: 2), () async {
+          try {
+            // 解锁语音服务
+            HybridNotificationService.instance.unlockVoiceService();
+            
+            // 播放语音
+            await HybridNotificationService.instance.speakReminder(autoSpeak);
+            
+            // 清除 URL 参数
+            html.window.history.replaceState(null, '', '/');
+          } catch (e) {
+            print('❌ autoSpeak 播放失败: $e');
+          }
+        });
+      }
+    } catch (e) {
+      print('❌ 处理 autoSpeak 参数失败: $e');
+    }
   }
 
   Future<void> _initializeApp() async {
@@ -215,6 +243,11 @@ class _SafeHomePageState extends State<SafeHomePage> {
       final provider = Provider.of<VoiceReminderProvider>(context, listen: false);
       await provider.initialize();
       print('✅ VoiceReminderProvider 初始化成功');
+      
+      // Web 环境：设置用户交互监听器
+      if (kIsWeb) {
+        _setupWebInteractionListeners();
+      }
     } catch (e) {
       print('❌ VoiceReminderProvider 初始化失败: $e');
       setState(() {
@@ -222,6 +255,17 @@ class _SafeHomePageState extends State<SafeHomePage> {
         _errorMessage = e.toString();
       });
     }
+  }
+
+  void _setupWebInteractionListeners() {
+    // 监听用户交互以解锁语音服务
+    html.document.addEventListener('click', (event) {
+      HybridNotificationService.instance.unlockVoiceService();
+    });
+    
+    html.document.addEventListener('touchstart', (event) {
+      HybridNotificationService.instance.unlockVoiceService();
+    });
   }
 
   @override

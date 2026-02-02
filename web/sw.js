@@ -1,166 +1,227 @@
-// VoiceFlow Service Worker for Web Push Notifications
+/// <reference lib="webworker" />
 
-const CACHE_NAME = 'voiceflow-v1';
+// Workbox-style precaching for Flutter Web
+const CACHE_NAME = 'flutter-precache-v1';
 const urlsToCache = [
   '/',
   '/main.dart.js',
   '/flutter.js',
   '/favicon.png',
+  '/icons/Icon-192.png',
+  '/icons/Icon-512.png',
+  '/manifest.json'
 ];
 
-// Install event
+// Allow the service worker to skip waiting and take control immediately
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[SW] Received SKIP_WAITING message, activating immediately')
+    self.skipWaiting()
+  }
+})
+
+// Take control of all clients immediately and clear old caches
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating new service worker')
+  event.waitUntil(
+    Promise.all([
+      // 立即接管所有客户端
+      self.clients.claim(),
+      // 清理旧版本的所有缓存
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            // 保留当前版本缓存，删除其他旧缓存
+            if (cacheName !== CACHE_NAME) {
+              console.log('[SW] Deleting old cache:', cacheName)
+              return caches.delete(cacheName)
+            }
+          })
+        )
+      })
+    ]).then(() => {
+      console.log('[SW] Service worker activated and ready')
+    })
+  )
+})
+
+// 安装时立即激活，不等待
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
+  console.log('[SW] Installing new service worker')
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('[SW] Opened cache')
+        return cache.addAll(urlsToCache)
       })
-  );
-});
+      .then(() => {
+        // 强制跳过等待，立即激活
+        self.skipWaiting()
+      })
+  )
+})
 
-// Fetch event
+// Basic fetch handler for cached resources
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
         return response || fetch(event.request);
-      }
-      )
+      })
   );
 });
 
-// Push event - Handle incoming push notifications
+// Handle Push Notifications
 self.addEventListener('push', (event) => {
-  console.log('Push event received:', event);
+  console.log('[SW] Push received:', event)
 
-  let data = {};
+  let data = { title: '系统提醒', body: '您有一条新提醒' }
   if (event.data) {
     try {
-      data = event.data.json();
+      data = event.data.json()
     } catch (e) {
-      data = { title: 'VoiceFlow', body: event.data.text() };
+      data.body = event.data.text()
     }
   }
 
-  const title = data.title || 'VoiceFlow 提醒';
   const options = {
-    body: data.body || '您有新的提醒',
-    icon: '/favicon.png',
-    badge: '/favicon.png',
-    tag: 'voiceflow-reminder',
-    requireInteraction: true,
+    body: `${data.body || '提醒内容为空'}\n\n👆 点击此通知播放语音提醒`,
+    icon: '/icons/Icon-192.png',
+    badge: '/icons/Icon-192.png',
+    vibrate: [200, 100, 200, 100, 200, 100, 200], // 持续振动模式
+    tag: 'reminder-' + Date.now(),
+    renotify: true,
+    requireInteraction: true, // Keep notification until user interacts
+    silent: false, // 允许声音
+    data: {
+      url: data.body ? `/?autoSpeak=${encodeURIComponent(data.body)}` : '/',
+      type: data.type,
+      body: data.body,
+      content: data.body
+    },
     actions: [
       {
-        action: 'view',
-        title: '查看',
-        icon: '/favicon.png'
+        action: 'play',
+        title: '🔊 播放语音'
       },
       {
         action: 'dismiss',
-        title: '忽略'
+        title: '关闭'
       }
-    ],
-    data: data
-  };
+    ]
+  }
+
+  // iOS 必须在 push 事件中同步调用 showNotification，不能异步太久
+  // Execute all three operations in parallel for maximum reliability
+  const notificationPromise = self.registration.showNotification(
+    '🔔 食材过期提醒',
+    options
+  ).then(() => {
+    console.log('[SW] Notification displayed successfully')
+  }).catch((e) => {
+    console.error('[SW] Failed to show notification:', e)
+    throw e
+  })
+
+  // Use BroadcastChannel as it's more robust for background wake-up
+  const broadcastPromise = (async () => {
+    try {
+      const channel = new BroadcastChannel('reminder-channel')
+      channel.postMessage({
+        type: 'PUSH_RECEIVED_WAKE_UP',
+        payload: data
+      })
+      channel.close()
+      console.log('[SW] BroadcastChannel message sent')
+    } catch (e) {
+      console.error('[SW] BroadcastChannel failed:', e)
+    }
+  })()
+
+  // Also keep the old postMessage for maximum compatibility
+  const clientsPromise = self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true
+  }).then((clients) => {
+    console.log(`[SW] Found ${clients.length} client(s)`)
+    clients.forEach((client) => {
+      client.postMessage({
+        type: 'PUSH_RECEIVED_WAKE_UP',
+        payload: data
+      })
+    })
+  }).catch((e) => {
+    console.error('[SW] Failed to send postMessage to clients:', e)
+  })
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
-      .then(() => {
-        console.log('Notification shown successfully');
+    Promise.all([notificationPromise, broadcastPromise, clientsPromise])
+  )
+})
 
-        // 如果是语音提醒，尝试播放语音
-        if (data.type === 'voice_reminder') {
-          playVoiceReminder(data.body);
-        }
-      })
-      .catch((error) => {
-        console.error('Error showing notification:', error);
-      })
-  );
-});
-
-// Notification click event
+// Handle Notification Click
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
+  console.log('[SW] Notification clicked:', event.notification.data, 'action:', event.action)
+  event.notification.close()
 
-  event.notification.close();
+  const data = event.notification.data || {}
+  const reminderContent = data.content || data.body || ''
+  const targetUrl = data.url || '/'
 
-  if (event.action === 'view') {
-    // Open the app
-    event.waitUntil(
-      clients.openWindow('/')
-    );
-  } else if (event.action === 'dismiss') {
-    // Just close the notification
-    return;
-  } else {
-    // Default action - open the app
-    event.waitUntil(
-      clients.openWindow('/')
-    );
+  // Handle action buttons
+  if (event.action === 'dismiss') {
+    console.log('[SW] User dismissed notification')
+    return
   }
-});
 
-// Background sync for offline functionality
-self.addEventListener('sync', (event) => {
-  console.log('Background sync:', event.tag);
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      console.log(`[SW] Found ${clientList.length} client(s) for notification click`)
 
-  if (event.tag === 'background-sync') {
-    event.waitUntil(doBackgroundSync());
-  }
-});
+      // Try to find an existing window to focus
+      if (clientList && clientList.length > 0) {
+        let client = clientList[0]
 
-// Function to play voice reminder
-function playVoiceReminder(text) {
-  try {
-    // Check if Speech Synthesis is available
-    if ('speechSynthesis' in self) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'zh-CN';
-      utterance.rate = 0.8;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+        // Prefer a focused window if available
+        for (let i = 0; i < clientList.length; i++) {
+          const c = clientList[i]
+          if (c && c.focused) {
+            client = c
+            break
+          }
+        }
 
-      // Find Chinese voice
-      const voices = speechSynthesis.getVoices();
-      const chineseVoice = voices.find(voice => voice.lang.startsWith('zh'));
-      if (chineseVoice) {
-        utterance.voice = chineseVoice;
+        if (client) {
+          console.log('[SW] Focusing existing window and sending message')
+          // Send message to the client to trigger voice playback
+          client.postMessage({
+            type: 'NOTIFICATION_CLICKED',
+            payload: {
+              content: reminderContent,
+              body: reminderContent
+            }
+          })
+
+          // Navigate to the target URL if specified
+          if (targetUrl && targetUrl !== '/') {
+            return client.navigate(targetUrl).then(() => client.focus())
+          }
+
+          return client.focus()
+        }
       }
 
-      speechSynthesis.speak(utterance);
-      console.log('Voice reminder played:', text);
-    } else {
-      console.log('Speech Synthesis not available');
-    }
-  } catch (error) {
-    console.error('Error playing voice reminder:', error);
-  }
-}
+      // No existing window, open a new one with autoSpeak parameter
+      const url = reminderContent
+        ? `/?autoSpeak=${encodeURIComponent(reminderContent)}`
+        : targetUrl
 
-// Background sync function
-async function doBackgroundSync() {
-  try {
-    // Sync any pending data
-    console.log('Performing background sync...');
-
-    // You can add logic here to sync reminders, send analytics, etc.
-
-  } catch (error) {
-    console.error('Background sync failed:', error);
-  }
-}
-
-// Message event - Handle messages from the main thread
-self.addEventListener('message', (event) => {
-  console.log('Service Worker received message:', event.data);
-
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
-console.log('VoiceFlow Service Worker loaded successfully');
+      console.log('[SW] Opening new window:', url)
+      return self.clients.openWindow(url)
+    }).catch((e) => {
+      console.error('[SW] Error handling notification click:', e)
+    })
+  )
+})
