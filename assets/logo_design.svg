@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 圆角矩形背景 -->
+  <rect width="1024" height="1024" rx="180" ry="180" fill="url(#backgroundGradient)"/>
+  
+  <!-- 声波流动效果 -->
+  <!-- 第一层声波 -->
+  <path d="M200 400 Q300 350 400 400 T600 400 T800 400" 
+        stroke="url(#waveGradient)" 
+        stroke-width="12" 
+        fill="none" 
+        stroke-linecap="round">
+    <animate attributeName="d" 
+             values="M200 400 Q300 350 400 400 T600 400 T800 400;
+                     M200 400 Q300 450 400 400 T600 400 T800 400;
+                     M200 400 Q300 350 400 400 T600 400 T800 400" 
+             dur="3s" 
+             repeatCount="indefinite"/>
+  </path>
+  
+  <!-- 第二层声波 -->
+  <path d="M200 500 Q350 450 500 500 T800 500" 
+        stroke="url(#waveGradient)" 
+        stroke-width="16" 
+        fill="none" 
+        stroke-linecap="round">
+    <animate attributeName="d" 
+             values="M200 500 Q350 450 500 500 T800 500;
+                     M200 500 Q350 550 500 500 T800 500;
+                     M200 500 Q350 450 500 500 T800 500" 
+             dur="2.5s" 
+             repeatCount="indefinite"/>
+  </path>
+  
+  <!-- 第三层声波 -->
+  <path d="M200 600 Q300 550 400 600 T600 600 T800 600" 
+        stroke="url(#waveGradient)" 
+        stroke-width="14" 
+        fill="none" 
+        stroke-linecap="round">
+    <animate attributeName="d" 
+             values="M200 600 Q300 550 400 600 T600 600 T800 600;
+                     M200 600 Q300 650 400 600 T600 600 T800 600;
+                     M200 600 Q300 550 400 600 T600 600 T800 600" 
+             dur="3.5s" 
+             repeatCount="indefinite"/>
+  </path>
+  
+  <!-- 中心麦克风图标 -->
+  <g transform="translate(412, 300)">
+    <!-- 麦克风主体 -->
+    <rect x="80" y="40" width="40" height="80" rx="20" ry="20" fill="white" opacity="0.9"/>
+    
+    <!-- 麦克风底座 -->
+    <rect x="85" y="120" width="30" height="8" rx="4" ry="4" fill="white" opacity="0.9"/>
+    <rect x="95" y="128" width="10" height="20" rx="5" ry="5" fill="white" opacity="0.9"/>
+    
+    <!-- 声音指示器 -->
+    <circle cx="60" cy="80" r="3" fill="white" opacity="0.7">
+      <animate attributeName="opacity" values="0.3;0.9;0.3" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="45" cy="80" r="2" fill="white" opacity="0.5">
+      <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="32" cy="80" r="1.5" fill="white" opacity="0.4">
+      <animate attributeName="opacity" values="0.1;0.6;0.1" dur="2.1s" repeatCount="indefinite"/>
+    </circle>
+    
+    <circle cx="140" cy="80" r="3" fill="white" opacity="0.7">
+      <animate attributeName="opacity" values="0.3;0.9;0.3" dur="1.7s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="155" cy="80" r="2" fill="white" opacity="0.5">
+      <animate attributeName="opacity" values="0.2;0.7;0.2" dur="2.0s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="168" cy="80" r="1.5" fill="white" opacity="0.4">
+      <animate attributeName="opacity" values="0.1;0.6;0.1" dur="2.3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- VoiceFlow 文字 (可选) -->
+  <text x="512" y="800" 
+        font-family="Inter, sans-serif" 
+        font-size="48" 
+        font-weight="700" 
+        fill="white" 
+        text-anchor="middle" 
+        opacity="0.9">VoiceFlow</text>
+</svg>

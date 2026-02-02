@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>通知和语音测试</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f8fafc;
+    }
+
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 8px;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .info {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🔔 通知和语音功能测试</h1>
+
+  <div class="test-section">
+    <h2>📢 浏览器通知测试</h2>
+    <div id="notification-status" class="status info">等待测试...</div>
+    <button onclick="testNotificationPermission()">检查通知权限</button>
+    <button onclick="testBrowserNotification()">测试浏览器通知</button>
+    <button onclick="testFallbackNotification()">测试备用通知</button>
+  </div>
+
+  <div class="test-section">
+    <h2>🎤 语音合成测试</h2>
+    <div id="speech-status" class="status info">等待测试...</div>
+    <button onclick="testSpeechSupport()">检查语音支持</button>
+    <button onclick="testSpeechSynthesis()">测试语音播放</button>
+    <button onclick="testChineseVoice()">测试中文语音</button>
+  </div>
+
+  <div class="test-section">
+    <h2>🔧 综合测试</h2>
+    <div id="combined-status" class="status info">等待测试...</div>
+    <button onclick="testCombined()">同时测试通知和语音</button>
+  </div>
+
+  <script>
+    // 通知权限测试
+    async function testNotificationPermission() {
+      const statusDiv = document.getElementById('notification-status');
+
+      if (!('Notification' in window)) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 浏览器不支持通知功能';
+        return;
+      }
+
+      statusDiv.className = 'status info';
+      statusDiv.textContent = `当前权限状态: ${Notification.permission}`;
+
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        statusDiv.textContent = `权限请求结果: ${permission}`;
+        statusDiv.className = permission === 'granted' ? 'status success' : 'status error';
+      }
+    }
+
+    // 浏览器通知测试
+    function testBrowserNotification() {
+      const statusDiv = document.getElementById('notification-status');
+
+      if (Notification.permission !== 'granted') {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 通知权限未授予，请先点击"检查通知权限"';
+        return;
+      }
+
+      try {
+        const notification = new Notification('🔔 测试通知', {
+          body: '这是一个浏览器原生通知测试，如果您看到这条消息，说明通知功能正常工作！',
+          icon: '/favicon.png',
+          tag: 'test-notification'
+        });
+
+        notification.onclick = function () {
+          console.log('通知被点击');
+          notification.close();
+        };
+
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
+
+        statusDiv.className = 'status success';
+        statusDiv.textContent = '✅ 浏览器通知已发送！';
+
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `❌ 通知发送失败: ${error.message}`;
+      }
+    }
+
+    // 备用通知测试
+    function testFallbackNotification() {
+      const statusDiv = document.getElementById('notification-status');
+
+      // 创建备用通知
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #059669;
+                color: white;
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                max-width: 300px;
+                font-family: inherit;
+                font-size: 14px;
+                line-height: 1.4;
+                animation: slideIn 0.3s ease-out;
+            `;
+
+      notification.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 4px;">🔔 备用通知测试</div>
+                <div style="opacity: 0.9;">这是一个备用通知，当浏览器通知不可用时显示。</div>
+            `;
+
+      // 添加动画
+      const style = document.createElement('style');
+      style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+      document.head.appendChild(style);
+      document.body.appendChild(notification);
+
+      // 3秒后移除
+      setTimeout(() => {
+        notification.style.animation = 'slideIn 0.3s ease-in reverse';
+        setTimeout(() => {
+          notification.remove();
+          style.remove();
+        }, 300);
+      }, 3000);
+
+      statusDiv.className = 'status success';
+      statusDiv.textContent = '✅ 备用通知已显示！';
+    }
+
+    // 语音支持测试
+    function testSpeechSupport() {
+      const statusDiv = document.getElementById('speech-status');
+
+      if (!('speechSynthesis' in window)) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 浏览器不支持语音合成功能';
+        return;
+      }
+
+      const voices = speechSynthesis.getVoices();
+      const chineseVoices = voices.filter(voice => voice.lang.startsWith('zh'));
+
+      statusDiv.className = 'status success';
+      statusDiv.textContent = `✅ 语音合成支持正常！可用语音: ${voices.length} 个，中文语音: ${chineseVoices.length} 个`;
+    }
+
+    // 语音合成测试
+    function testSpeechSynthesis() {
+      const statusDiv = document.getElementById('speech-status');
+
+      if (!('speechSynthesis' in window)) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 浏览器不支持语音合成功能';
+        return;
+      }
+
+      try {
+        speechSynthesis.cancel(); // 停止当前播放
+
+        const utterance = new SpeechSynthesisUtterance('语音测试：系统语音功能正常工作。');
+        utterance.lang = 'zh-CN';
+        utterance.rate = 0.8;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        utterance.onstart = function () {
+          statusDiv.className = 'status info';
+          statusDiv.textContent = '🎤 正在播放语音...';
+        };
+
+        utterance.onend = function () {
+          statusDiv.className = 'status success';
+          statusDiv.textContent = '✅ 语音播放完成！';
+        };
+
+        utterance.onerror = function (event) {
+          statusDiv.className = 'status error';
+          statusDiv.textContent = `❌ 语音播放失败: ${event.error}`;
+        };
+
+        speechSynthesis.speak(utterance);
+
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `❌ 语音播放失败: ${error.message}`;
+      }
+    }
+
+    // 中文语音测试
+    function testChineseVoice() {
+      const statusDiv = document.getElementById('speech-status');
+
+      if (!('speechSynthesis' in window)) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 浏览器不支持语音合成功能';
+        return;
+      }
+
+      try {
+        speechSynthesis.cancel();
+
+        const voices = speechSynthesis.getVoices();
+        const chineseVoice = voices.find(voice => voice.lang.startsWith('zh'));
+
+        const utterance = new SpeechSynthesisUtterance('你好，这是中文语音测试。食材过期提醒功能正常工作。');
+        utterance.lang = 'zh-CN';
+        utterance.rate = 0.8;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        if (chineseVoice) {
+          utterance.voice = chineseVoice;
+          statusDiv.textContent = `使用中文语音: ${chineseVoice.name}`;
+        }
+
+        utterance.onstart = function () {
+          statusDiv.className = 'status info';
+          statusDiv.textContent = '🎤 正在播放中文语音...';
+        };
+
+        utterance.onend = function () {
+          statusDiv.className = 'status success';
+          statusDiv.textContent = '✅ 中文语音播放完成！';
+        };
+
+        utterance.onerror = function (event) {
+          statusDiv.className = 'status error';
+          statusDiv.textContent = `❌ 中文语音播放失败: ${event.error}`;
+        };
+
+        speechSynthesis.speak(utterance);
+
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `❌ 中文语音播放失败: ${error.message}`;
+      }
+    }
+
+    // 综合测试
+    async function testCombined() {
+      const statusDiv = document.getElementById('combined-status');
+      statusDiv.className = 'status info';
+      statusDiv.textContent = '🔄 正在进行综合测试...';
+
+      // 先测试通知
+      if (Notification.permission === 'granted') {
+        const notification = new Notification('🔔 综合测试', {
+          body: '通知和语音功能综合测试开始',
+          icon: '/favicon.png'
+        });
+
+        setTimeout(() => notification.close(), 3000);
+      }
+
+      // 延迟1秒后播放语音
+      setTimeout(() => {
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance('综合测试：通知和语音功能都正常工作。');
+          utterance.lang = 'zh-CN';
+          utterance.rate = 0.8;
+
+          utterance.onend = function () {
+            statusDiv.className = 'status success';
+            statusDiv.textContent = '✅ 综合测试完成！通知和语音功能都正常。';
+          };
+
+          speechSynthesis.speak(utterance);
+        } else {
+          statusDiv.className = 'status error';
+          statusDiv.textContent = '❌ 语音功能不可用';
+        }
+      }, 1000);
+    }
+
+    // 页面加载时获取语音列表
+    window.addEventListener('load', function () {
+      if ('speechSynthesis' in window) {
+        // 某些浏览器需要异步加载语音列表
+        speechSynthesis.getVoices();
+        speechSynthesis.onvoiceschanged = function () {
+          console.log('语音列表已加载:', speechSynthesis.getVoices().length);
+        };
+      }
+    });
+  </script>
+</body>
+
+</html>

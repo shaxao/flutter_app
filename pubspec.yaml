@@ -1,0 +1,68 @@
+name: voiceflow_app
+description: VoiceFlow - 智能语音助手，专注于语音提醒和待办事项管理
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # 状态管理
+  flutter_riverpod: ^2.4.9
+  provider: ^6.1.1
+  
+  # UI组件
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  
+  # 本地存储
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # 网络请求
+  dio: ^5.4.0
+  http: ^1.1.2
+  
+  # 语音合成
+  flutter_tts: ^3.8.5
+  
+  # 音频播放
+  audioplayers: ^5.2.1
+  
+  # 本地通知
+  flutter_local_notifications: ^16.3.0
+  
+  # 后台任务
+  workmanager: ^0.5.2
+  
+  # 权限管理
+  permission_handler: ^11.1.0
+  
+  # 文件选择
+  file_picker: ^6.1.1
+  
+  # 日期时间
+  intl: ^0.18.1
+  table_calendar: ^3.0.9
+  
+  # 工具类
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/icons/
+    - assets/images/
