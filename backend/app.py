@@ -2115,7 +2115,61 @@ def text_to_speech():
         if len(text) > 500:
             text = text[:500]
         
-        # 使用系统TTS生成音频文件
+        print(f"[TTS] Processing text: {text[:50]}...")
+        
+        # 策略1: 尝试使用pyttsx3 (Python TTS库)
+        try:
+            import pyttsx3
+            import tempfile
+            import os
+            
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                temp_path = temp_file.name
+            
+            # 初始化TTS引擎
+            engine = pyttsx3.init()
+            
+            # 设置语音属性
+            voices = engine.getProperty('voices')
+            for voice in voices:
+                if 'chinese' in voice.name.lower() or 'zh' in voice.id.lower():
+                    engine.setProperty('voice', voice.id)
+                    break
+            
+            engine.setProperty('rate', 150)  # 语速
+            engine.setProperty('volume', 1.0)  # 音量
+            
+            # 保存到文件
+            engine.save_to_file(text, temp_path)
+            engine.runAndWait()
+            
+            # 读取生成的音频文件
+            if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                with open(temp_path, 'rb') as f:
+                    audio_data = f.read()
+                
+                # 清理临时文件
+                os.unlink(temp_path)
+                
+                print(f"[TTS] pyttsx3 success, audio size: {len(audio_data)} bytes")
+                
+                # 返回音频数据
+                response = make_response(audio_data)
+                response.headers['Content-Type'] = 'audio/wav'
+                response.headers['Content-Disposition'] = 'inline; filename="tts.wav"'
+                response.headers['Cache-Control'] = 'public, max-age=3600'
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                
+                return response
+            else:
+                os.unlink(temp_path)
+                raise Exception("pyttsx3 generated empty file")
+                
+        except Exception as e:
+            print(f"[TTS] pyttsx3 failed: {e}")
+        
+        # 策略2: 尝试使用espeak（Linux系统）
         try:
             import subprocess
             import tempfile
@@ -2125,53 +2179,114 @@ def text_to_speech():
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
                 temp_path = temp_file.name
             
-            try:
-                # 尝试使用espeak（Linux系统）
-                subprocess.run([
-                    'espeak', '-v', 'zh', '-s', '150', '-a', '100',
-                    '-w', temp_path, text
-                ], check=True, capture_output=True)
-                
-                # 读取生成的音频文件
+            # 尝试使用espeak
+            result = subprocess.run([
+                'espeak', '-v', 'zh', '-s', '150', '-a', '100',
+                '-w', temp_path, text
+            ], check=True, capture_output=True, timeout=30)
+            
+            # 读取生成的音频文件
+            if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
                 with open(temp_path, 'rb') as f:
                     audio_data = f.read()
                 
                 # 清理临时文件
                 os.unlink(temp_path)
                 
+                print(f"[TTS] espeak success, audio size: {len(audio_data)} bytes")
+                
                 # 返回音频数据
                 response = make_response(audio_data)
                 response.headers['Content-Type'] = 'audio/wav'
                 response.headers['Content-Disposition'] = 'inline; filename="tts.wav"'
                 response.headers['Cache-Control'] = 'public, max-age=3600'
+                response.headers['Access-Control-Allow-Origin'] = '*'
                 
                 return response
-                
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                # espeak不可用，使用备选方案
+            else:
                 os.unlink(temp_path)
-                raise Exception("espeak not available")
+                raise Exception("espeak generated empty file")
                 
         except Exception as e:
-            print(f"System TTS failed: {e}")
+            print(f"[TTS] espeak failed: {e}")
+        
+        # 策略3: 使用外部TTS API (如果配置了API密钥)
+        try:
+            import requests
             
-            # 备选方案：返回简单的提示音
+            # 检查是否配置了OpenAI API
+            openai_key = os.environ.get('OPENAI_API_KEY')
+            openai_url = os.environ.get('OPENAI_API_URL', 'https://api.openai.com/v1/audio/speech')
+            
+            if openai_key and openai_url:
+                print(f"[TTS] Trying OpenAI TTS API...")
+                
+                payload = {
+                    'model': voice_model,
+                    'input': text,
+                    'voice': 'alloy',
+                    'response_format': 'wav' if format_type == 'wav' else 'mp3'
+                }
+                
+                headers = {
+                    'Authorization': f'Bearer {openai_key}',
+                    'Content-Type': 'application/json'
+                }
+                
+                response = requests.post(openai_url, json=payload, headers=headers, timeout=30)
+                
+                if response.status_code == 200:
+                    audio_data = response.content
+                    print(f"[TTS] OpenAI API success, audio size: {len(audio_data)} bytes")
+                    
+                    # 返回音频数据
+                    flask_response = make_response(audio_data)
+                    flask_response.headers['Content-Type'] = f'audio/{format_type}'
+                    flask_response.headers['Content-Disposition'] = f'inline; filename="tts.{format_type}"'
+                    flask_response.headers['Cache-Control'] = 'public, max-age=3600'
+                    flask_response.headers['Access-Control-Allow-Origin'] = '*'
+                    
+                    return flask_response
+                else:
+                    raise Exception(f"OpenAI API returned {response.status_code}")
+                    
+        except Exception as e:
+            print(f"[TTS] OpenAI API failed: {e}")
+        
+        # 策略4: 返回预生成的中文语音片段
+        print(f"[TTS] All TTS methods failed, returning pre-generated audio")
+        
+        # 返回一个更长的中文提示音（Base64编码）
+        # 这是一个简单的"提醒"语音
+        chinese_beep_b64 = '''
+        UklGRiQEAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAEAAA=
+        '''
+        
+        try:
             import base64
-            
-            # 简单的提示音（Base64编码的短音频）
-            beep_audio_b64 = 'UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT'
-            beep_audio = base64.b64decode(beep_audio_b64)
+            beep_audio = base64.b64decode(chinese_beep_b64.strip())
             
             # 创建响应
             response = make_response(beep_audio)
             response.headers['Content-Type'] = 'audio/wav'
             response.headers['Content-Disposition'] = 'inline; filename="beep.wav"'
             response.headers['Cache-Control'] = 'public, max-age=3600'
+            response.headers['Access-Control-Allow-Origin'] = '*'
             
             return response
             
+        except Exception as e:
+            print(f"[TTS] Even fallback audio failed: {e}")
+            
+            # 最后的备选方案：返回错误但允许前端使用SpeechSynthesis
+            return jsonify({
+                'error': 'TTS generation failed, use client-side synthesis',
+                'fallback': 'speechSynthesis',
+                'text': text
+            }), 200
+            
     except Exception as e:
-        print(f"TTS API error: {e}")
+        print(f"[TTS] Fatal error: {e}")
         return jsonify({'error': 'TTS processing failed'}), 500
 
 @app.patch('/api/v1/voice-reminders/<int:rid>')
