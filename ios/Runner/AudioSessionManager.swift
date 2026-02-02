@@ -19,7 +19,7 @@ import MediaPlayer
     private func setupAudioSession() {
         do {
             // 设置音频类别为播放模式，支持后台播放
-            try audioSession.setCategory(.playback, 
+            try audioSession.setCategory(AVAudioSession.Category.playback, 
                                        mode: .voicePrompt,
                                        options: [.allowBluetooth, 
                                                .allowBluetoothA2DP,

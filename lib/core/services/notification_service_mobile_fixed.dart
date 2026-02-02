@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'voice_service.dart';
 
-/// 移动端通知服务实现 - iOS锁屏语音播放兼容版本
+/// 移动端通知服务实现 - 兼容版本
 class NotificationServicePlatform {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
