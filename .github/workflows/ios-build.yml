@@ -1,120 +1,103 @@
-name: VoiceFlow iOS Build & Sign
-
+name: iOS Build - Final Fix
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build type'
-        required: true
-        default: 'development'
-        type: choice
-        options:
-        - development
-        - adhoc
-        - release
+    branches: [ main, master ]
 
 jobs:
-  build:
+  build-ios:
     runs-on: macos-latest
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    
+      
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.35.5'
+        flutter-version: '3.35.0'
         channel: 'stable'
-    
-    - name: Flutter Doctor
-      run: flutter doctor -v
-    
-    - name: Cache pub
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.pub-cache
-        key: ${{ runner.os }}-pub-${{ github.run_id }}
-    
-    - name: Install dependencies
+        cache: true
+        
+    - name: Clean all build artifacts
+      run: |
+        # Remove all build artifacts
+        rm -rf build/
+        rm -rf ios/build/
+        rm -rf ios/Pods/
+        rm -rf ios/.symlinks/
+        rm -rf ios/Flutter/ephemeral/
+        rm -f ios/Podfile.lock
+        rm -f ios/.flutter-plugins-dependencies
+        
+        # Flutter clean
+        flutter clean
+        
+    - name: Get Flutter dependencies
       run: flutter pub get
-    
-    - name: Flutter build bundle
-      run: flutter build bundle --release
-    
-    - name: Cache CocoaPods
-      uses: actions/cache@v4
-      with:
-        path: |
-          ios/Pods
-          ~/Library/Caches/CocoaPods
-          ~/.cocoapods
-        key: ${{ runner.os }}-pods-${{ github.run_id }}
-    
-    - name: Install CocoaPods
+      
+    - name: Verify iOS configuration
       run: |
-        pod repo update
-        pod install
-      working-directory: ios
-    
-    - name: Precache iOS artifacts
-      run: flutter precache --ios
-    
-    - name: Xcode build (codesign disabled)
+        # Check if required files exist
+        ls -la ios/Runner/
+        cat ios/Runner/Info.plist | grep -A 5 UIBackgroundModes || echo "No background modes found"
+        cat ios/Podfile | head -10 || echo "No Podfile found"
+        
+    - name: Setup iOS deployment target
       run: |
-        xcodebuild \
-          -workspace ios/Runner.xcworkspace \
-          -scheme Runner \
-          -configuration Release \
-          -sdk iphoneos \
-          -destination 'generic/platform=iOS' \
-          CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_STYLE=Manual \
-          CODE_SIGN_IDENTITY= \
-          DEVELOPMENT_TEAM= \
-          archive -archivePath build/Runner.xcarchive
-    
-    - name: Create unsigned IPA
+        # Ensure deployment target is set correctly
+        if ! grep -q "IPHONEOS_DEPLOYMENT_TARGET" ios/Flutter/Debug.xcconfig; then
+          echo "IPHONEOS_DEPLOYMENT_TARGET = 13.0" >> ios/Flutter/Debug.xcconfig
+        fi
+        if ! grep -q "IPHONEOS_DEPLOYMENT_TARGET" ios/Flutter/Release.xcconfig; then
+          echo "IPHONEOS_DEPLOYMENT_TARGET = 13.0" >> ios/Flutter/Release.xcconfig
+        fi
+        
+    - name: Install CocoaPods dependencies
       run: |
-        mkdir -p Payload
-        cp -R build/Runner.xcarchive/Products/Applications/Runner.app Payload/Runner.app
-        zip -r VoiceFlow-unsigned.ipa Payload
-    
-    - name: Upload unsigned IPA
+        cd ios
+        # Update CocoaPods repo
+        pod repo update --silent
+        
+        # Install pods with verbose output for debugging
+        pod install --repo-update --verbose
+        
+    - name: Verify Xcode and Swift setup
+      run: |
+        xcode-select --print-path
+        xcodebuild -version
+        swift --version
+        
+    - name: Build iOS app (Debug first)
+      run: |
+        # Try debug build first
+        flutter build ios --debug --no-codesign --verbose
+        
+    - name: Build iOS app (Release)
+      run: |
+        # Build release version
+        flutter build ios --release --no-codesign --verbose
+        
+    - name: Archive iOS app (Optional)
+      if: success()
+      run: |
+        cd ios
+        xcodebuild -workspace Runner.xcworkspace \
+                   -scheme Runner \
+                   -configuration Release \
+                   -destination generic/platform=iOS \
+                   -archivePath build/Runner.xcarchive \
+                   archive \
+                   CODE_SIGNING_ALLOWED=NO \
+                   CODE_SIGNING_REQUIRED=NO
+                   
+    - name: Upload build artifacts
+      if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: VoiceFlow-unsigned-IPA
-        path: VoiceFlow-unsigned.ipa
-        retention-days: 30
-
-  test-web:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.35.5'
-        channel: 'stable'
-    
-    - name: Install dependencies
-      run: flutter pub get
-    
-    - name: Build Web
-      run: flutter build web
-    
-    - name: Upload Web Build
-      uses: actions/upload-artifact@v4
-      with:
-        name: VoiceFlow-Web
-        path: build/web
-        retention-days: 30
+        name: ios-build-logs
+        path: |
+          ios/build/
+          ~/.flutter/logs/
+        retention-days: 1
