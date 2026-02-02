@@ -178,13 +178,20 @@ class NotificationServicePlatform {
           const platform = MethodChannel('voiceflow/voice');
           await platform.invokeMethod('speakInBackground', {'text': text});
         } catch (e) {
-          print('⚠️ 原生语音播放失败，使用Flutter TTS: $e');
+          print('⚠️ 原生语音播放不可用，已使用Flutter TTS: $e');
+          // 不抛出错误，因为Flutter TTS已经播放了
         }
       }
       
       print('✅ 后台语音播放完成');
     } catch (e) {
       print('❌ 后台语音播放失败: $e');
+      // 尝试系统提示音作为最后备选
+      try {
+        await SystemSound.play(SystemSoundType.alert);
+      } catch (e2) {
+        print('❌ 系统提示音也失败: $e2');
+      }
     }
   }
   

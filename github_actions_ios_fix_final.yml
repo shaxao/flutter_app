@@ -1,0 +1,103 @@
+name: iOS Build - Final Fix
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Clean all build artifacts
+      run: |
+        # Remove all build artifacts
+        rm -rf build/
+        rm -rf ios/build/
+        rm -rf ios/Pods/
+        rm -rf ios/.symlinks/
+        rm -rf ios/Flutter/ephemeral/
+        rm -f ios/Podfile.lock
+        rm -f ios/.flutter-plugins-dependencies
+        
+        # Flutter clean
+        flutter clean
+        
+    - name: Get Flutter dependencies
+      run: flutter pub get
+      
+    - name: Verify iOS configuration
+      run: |
+        # Check if required files exist
+        ls -la ios/Runner/
+        cat ios/Runner/Info.plist | grep -A 5 UIBackgroundModes || echo "No background modes found"
+        cat ios/Podfile | head -10 || echo "No Podfile found"
+        
+    - name: Setup iOS deployment target
+      run: |
+        # Ensure deployment target is set correctly
+        if ! grep -q "IPHONEOS_DEPLOYMENT_TARGET" ios/Flutter/Debug.xcconfig; then
+          echo "IPHONEOS_DEPLOYMENT_TARGET = 13.0" >> ios/Flutter/Debug.xcconfig
+        fi
+        if ! grep -q "IPHONEOS_DEPLOYMENT_TARGET" ios/Flutter/Release.xcconfig; then
+          echo "IPHONEOS_DEPLOYMENT_TARGET = 13.0" >> ios/Flutter/Release.xcconfig
+        fi
+        
+    - name: Install CocoaPods dependencies
+      run: |
+        cd ios
+        # Update CocoaPods repo
+        pod repo update --silent
+        
+        # Install pods with verbose output for debugging
+        pod install --repo-update --verbose
+        
+    - name: Verify Xcode and Swift setup
+      run: |
+        xcode-select --print-path
+        xcodebuild -version
+        swift --version
+        
+    - name: Build iOS app (Debug first)
+      run: |
+        # Try debug build first
+        flutter build ios --debug --no-codesign --verbose
+        
+    - name: Build iOS app (Release)
+      run: |
+        # Build release version
+        flutter build ios --release --no-codesign --verbose
+        
+    - name: Archive iOS app (Optional)
+      if: success()
+      run: |
+        cd ios
+        xcodebuild -workspace Runner.xcworkspace \
+                   -scheme Runner \
+                   -configuration Release \
+                   -destination generic/platform=iOS \
+                   -archivePath build/Runner.xcarchive \
+                   archive \
+                   CODE_SIGNING_ALLOWED=NO \
+                   CODE_SIGNING_REQUIRED=NO
+                   
+    - name: Upload build artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-build-logs
+        path: |
+          ios/build/
+          ~/.flutter/logs/
+        retention-days: 1

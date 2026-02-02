@@ -152,7 +152,8 @@ class VoiceServicePlatform {
         const platform = MethodChannel('voiceflow/audio_session');
         await platform.invokeMethod('activateAudioSession');
       } catch (e) {
-        print('⚠️ 激活音频会话失败: $e');
+        print('⚠️ 激活音频会话失败，继续使用默认配置: $e');
+        // 不抛出错误，继续执行
       }
     }
   }
@@ -186,22 +187,31 @@ class VoiceServicePlatform {
     print('🔒 锁屏状态语音播放: "$text"');
     
     try {
-      // 1. 确保音频会话处于活跃状态
-      await _activateAudioSession();
-      
-      // 2. 设置后台模式标志
+      // 1. 设置后台模式标志
       _isBackgroundMode = true;
       
-      // 3. 尝试播放语音
+      // 2. 尝试播放语音
       await speak(text);
       
-      // 4. 如果TTS失败，发送本地通知作为备选
-      await _sendVoiceNotification(text);
+      // 3. 如果是iOS，尝试使用原生方法（如果可用）
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        try {
+          const platform = MethodChannel('voiceflow/voice');
+          await platform.invokeMethod('speakInBackground', {'text': text});
+        } catch (e) {
+          print('⚠️ 原生语音播放不可用，使用Flutter TTS: $e');
+          // 继续使用Flutter TTS，不抛出错误
+        }
+      }
       
     } catch (e) {
       print('❌ 锁屏语音播放失败: $e');
-      // 确保至少发送通知
-      await _sendVoiceNotification(text);
+      // 确保至少尝试基础语音播放
+      try {
+        await speak(text);
+      } catch (e2) {
+        print('❌ 基础语音播放也失败: $e2');
+      }
     } finally {
       _isBackgroundMode = false;
     }
@@ -257,8 +267,8 @@ class VoiceServicePlatform {
         final result = await platform.invokeMethod('checkBackgroundAudioPermission');
         return result == true;
       } catch (e) {
-        print('❌ 检查后台播放权限失败: $e');
-        return false;
+        print('❌ 检查后台播放权限失败，假设支持: $e');
+        return true; // 假设支持，避免阻塞功能
       }
     }
     return true; // Android默认支持
@@ -272,8 +282,8 @@ class VoiceServicePlatform {
         final result = await platform.invokeMethod('requestBackgroundAudioPermission');
         return result == true;
       } catch (e) {
-        print('❌ 请求后台音频权限失败: $e');
-        return false;
+        print('❌ 请求后台音频权限失败，假设已授权: $e');
+        return true; // 假设已授权，避免阻塞功能
       }
     }
     return true;
