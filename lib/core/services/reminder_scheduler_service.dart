@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'notification_service.dart';
 import 'voice_service.dart';
+import 'hybrid_notification_service.dart';
 import '../../features/reminder/domain/models/voice_reminder.dart';
 
 /// 提醒调度服务 - 管理所有提醒的调度和执行
@@ -41,14 +42,8 @@ class ReminderSchedulerService {
         return;
       }
       
-      // 调度系统通知
-      await NotificationService.instance.scheduleNotification(
-        id: reminder.id ?? DateTime.now().millisecondsSinceEpoch,
-        title: '🔔 VoiceFlow 提醒',
-        body: reminder.content,
-        scheduledTime: nextReminderTime,
-        payload: 'reminder_${reminder.id}',
-      );
+      // 调度混合通知（本地 + 服务器推送）
+      await HybridNotificationService.instance.scheduleReminderNotification(reminder);
       
       // 调度语音播报（使用 Timer）
       final delay = nextReminderTime.difference(now);

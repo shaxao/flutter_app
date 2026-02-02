@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../../widgets/connection_status_widget.dart';
+import '../../../../core/services/web_push_service.dart';
 import '../../../reminder/presentation/providers/voice_reminder_provider.dart';
 
 /// 设置页面
@@ -729,6 +730,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 _testReminderScheduling();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.cloud),
+              title: const Text('测试服务器推送'),
+              subtitle: const Text('测试 Web Push 推送功能'),
+              onTap: () {
+                Navigator.pop(context);
+                _testWebPush();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text('重置推送密钥'),
+              subtitle: const Text('重置 VAPID 密钥并重新订阅'),
+              onTap: () {
+                Navigator.pop(context);
+                _resetWebPushKeys();
+              },
+            ),
           ],
         ),
         actions: [
@@ -799,6 +818,46 @@ class _SettingsPageState extends State<SettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ 提醒调度测试失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  void _testWebPush() async {
+    try {
+      await WebPushService.instance.testPush();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 服务器推送测试已发送'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 服务器推送测试失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  void _resetWebPushKeys() async {
+    try {
+      await WebPushService.instance.resetVapidKeys();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 推送密钥已重置并重新订阅'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 重置推送密钥失败: $e'),
           backgroundColor: Colors.red,
         ),
       );

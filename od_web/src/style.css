@@ -1,0 +1,244 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@theme {
+  --color-primary: #7C3AED;
+  --color-secondary: #A78BFA;
+  --color-cta: #F97316;
+  --color-success: #00A870;
+  --color-warning: #ED7B2F;
+  --color-danger: #E34D59;
+}
+
+:root {
+  --van-primary-color: #7C3AED;
+  --van-success-color: #00A870;
+  --van-danger-color: #E34D59;
+  --van-warning-color: #ED7B2F;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #FAF5FF;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 200ms ease;
+}
+
+body.dark {
+  background-color: #0C0A09;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Glassmorphism Utilities - Optimized for light mode visibility */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Performance-optimized transitions - use transform and opacity only */
+.transition-smooth {
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.transition-colors-smooth {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+/* Hover lift effect using transform (no layout shift) */
+.hover-lift {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid #7C3AED;
+  outline-offset: 2px;
+}
+
+/* Cursor pointer for all interactive elements */
+button,
+a,
+[role="button"],
+[onclick],
+.cursor-pointer {
+  cursor: pointer;
+}
+
+
+/* Vant Component Dark Mode Overrides */
+.dark .van-field__control,
+.dark .van-field__control::placeholder {
+  color: #D6D3D1 !important;
+  background-color: transparent !important;
+}
+
+.dark .van-field {
+  background-color: #292524 !important;
+}
+
+.dark .van-cell {
+  background-color: #1C1917 !important;
+  color: #FAFAF9 !important;
+}
+
+.dark .van-button--default {
+  background-color: #292524 !important;
+  border-color: #44403C !important;
+  color: #D6D3D1 !important;
+}
+
+.dark .van-button--primary {
+  background-color: #7C3AED !important;
+  border-color: #7C3AED !important;
+}
+
+.dark .van-search {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-search__content {
+  background-color: #292524 !important;
+}
+
+.dark .van-dropdown-menu__bar {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-dropdown-menu__title {
+  color: #D6D3D1 !important;
+}
+
+.dark .van-popup {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-picker {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-picker__toolbar {
+  background-color: #292524 !important;
+}
+
+.dark .van-picker-column__item {
+  color: #D6D3D1 !important;
+}
+
+.dark .van-calendar__header {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-calendar__weekdays {
+  color: #A8A29E !important;
+}
+
+.dark .van-calendar__day {
+  color: #D6D3D1 !important;
+}
+
+.dark .van-dialog {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-dialog__header {
+  color: #FAFAF9 !important;
+}
+
+.dark .van-dialog__message {
+  color: #D6D3D1 !important;
+}
+
+.dark .van-uploader__upload {
+  background-color: #292524 !important;
+}
+
+.dark .van-collapse-item__content {
+  background-color: #1C1917 !important;
+  color: #D6D3D1 !important;
+}
+
+.dark .van-collapse-item__title {
+  background-color: #1C1917 !important;
+  color: #FAFAF9 !important;
+}
+
+.dark .van-empty__description {
+  color: #A8A29E !important;
+}
+
+.dark .van-loading__text {
+  color: #D6D3D1 !important;
+}
+
+.dark .van-overlay {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.dark .van-nav-bar {
+  background-color: rgba(28, 25, 23, 0.8) !important;
+}
+
+.dark .van-nav-bar__title {
+  color: #FAFAF9 !important;
+}
+
+.dark .van-nav-bar__text {
+  color: #D6D3D1 !important;
+}
+
+.dark .van-tabbar {
+  background-color: #1C1917 !important;
+}
+
+.dark .van-tabbar-item__text {
+  color: #9CA3AF !important;
+}
+
+.dark .van-tabbar-item--active .van-tabbar-item__text {
+  color: #7C3AED !important;
+}
