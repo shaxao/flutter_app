@@ -6,16 +6,10 @@ import AVFoundation
 @main
 @objc class AppDelegate: FlutterAppDelegate {
     
-    private var audioSessionManager: AudioSessionManager!
-    
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        
-        // 初始化音频会话管理器
-        audioSessionManager = AudioSessionManager.shared
-        audioSessionManager.startObservingAudioSessionNotifications()
         
         // 设置通知代理
         UNUserNotificationCenter.current().delegate = self
@@ -68,23 +62,23 @@ import AVFoundation
     private func handleAudioSessionMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "setupBackgroundAudio":
-            // 音频会话已在初始化时设置
+            setupBackgroundAudio()
             result(true)
             
         case "activateAudioSession":
-            let success = audioSessionManager.activateAudioSession()
+            let success = activateAudioSession()
             result(success)
             
         case "deactivateAudioSession":
-            let success = audioSessionManager.deactivateAudioSession()
+            let success = deactivateAudioSession()
             result(success)
             
         case "checkBackgroundAudioPermission":
-            let hasPermission = audioSessionManager.checkBackgroundAudioPermission()
+            let hasPermission = checkBackgroundAudioPermission()
             result(hasPermission)
             
         case "requestBackgroundAudioPermission":
-            let granted = audioSessionManager.requestBackgroundAudioPermission()
+            let granted = requestBackgroundAudioPermission()
             result(granted)
             
         default:
@@ -102,19 +96,19 @@ import AVFoundation
                 return
             }
             
-            audioSessionManager.speakInBackground(text)
+            speakInBackground(text)
             result(true)
             
         case "stopSpeaking":
-            audioSessionManager.stopSpeaking()
+            stopSpeaking()
             result(true)
             
         case "pauseSpeaking":
-            audioSessionManager.pauseSpeaking()
+            pauseSpeaking()
             result(true)
             
         case "continueSpeaking":
-            audioSessionManager.continueSpeaking()
+            continueSpeaking()
             result(true)
             
         default:
@@ -144,6 +138,100 @@ import AVFoundation
         }
     }
     
+    // MARK: - 音频会话管理
+    
+    private func setupBackgroundAudio() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(AVAudioSession.Category.playback,
+                                       mode: .voicePrompt,
+                                       options: [.allowBluetooth,
+                                               .allowBluetoothA2DP,
+                                               .defaultToSpeaker,
+                                               .mixWithOthers])
+            try audioSession.setActive(true)
+            print("✅ iOS音频会话已设置为后台播放模式")
+        } catch {
+            print("❌ 设置iOS音频会话失败: \(error)")
+        }
+    }
+    
+    private func activateAudioSession() -> Bool {
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            print("✅ 音频会话已激活")
+            return true
+        } catch {
+            print("❌ 激活音频会话失败: \(error)")
+            return false
+        }
+    }
+    
+    private func deactivateAudioSession() -> Bool {
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            print("✅ 音频会话已停用")
+            return true
+        } catch {
+            print("❌ 停用音频会话失败: \(error)")
+            return false
+        }
+    }
+    
+    private func checkBackgroundAudioPermission() -> Bool {
+        let backgroundModes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
+        let hasAudioBackground = backgroundModes?.contains("audio") ?? false
+        print("后台音频权限: \(hasAudioBackground)")
+        return hasAudioBackground
+    }
+    
+    private func requestBackgroundAudioPermission() -> Bool {
+        return checkBackgroundAudioPermission()
+    }
+    
+    // MARK: - 语音播放
+    
+    private var speechSynthesizer: AVSpeechSynthesizer?
+    
+    private func speakInBackground(_ text: String) {
+        print("🔊 开始后台语音播放: \(text)")
+        
+        // 确保音频会话处于活跃状态
+        _ = activateAudioSession()
+        
+        // 初始化语音合成器（如果还没有）
+        if speechSynthesizer == nil {
+            speechSynthesizer = AVSpeechSynthesizer()
+        }
+        
+        // 创建语音合成请求
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+        utterance.rate = 0.5
+        utterance.volume = 1.0
+        utterance.pitchMultiplier = 1.0
+        
+        // 播放语音
+        speechSynthesizer?.speak(utterance)
+        
+        print("✅ 后台语音播放已开始")
+    }
+    
+    private func stopSpeaking() {
+        speechSynthesizer?.stopSpeaking(at: .immediate)
+        print("✅ 语音播放已停止")
+    }
+    
+    private func pauseSpeaking() {
+        speechSynthesizer?.pauseSpeaking(at: .immediate)
+        print("✅ 语音播放已暂停")
+    }
+    
+    private func continueSpeaking() {
+        speechSynthesizer?.continueSpeaking()
+        print("✅ 语音播放已继续")
+    }
+    
     /// 显示带语音播放功能的通知
     private func showVoiceNotification(title: String, body: String, playVoice: Bool, voiceText: String?) {
         let content = UNMutableNotificationContent()
@@ -154,7 +242,7 @@ import AVFoundation
         
         // 如果需要播放语音，先播放语音
         if playVoice, let text = voiceText, !text.isEmpty {
-            audioSessionManager.speakInBackground(text)
+            speakInBackground(text)
         }
         
         // 创建通知请求
@@ -181,7 +269,7 @@ import AVFoundation
         print("📱 应用进入后台")
         
         // 确保音频会话保持活跃（用于后台语音播放）
-        _ = audioSessionManager.activateAudioSession()
+        _ = activateAudioSession()
     }
     
     override func applicationWillEnterForeground(_ application: UIApplication) {
@@ -230,7 +318,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         if content.categoryIdentifier == "VOICE_REMINDER" {
             let voiceText = content.body
             if !voiceText.isEmpty {
-                audioSessionManager.speakInBackground(voiceText)
+                speakInBackground(voiceText)
             }
         }
         

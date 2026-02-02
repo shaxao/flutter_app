@@ -1,0 +1,29 @@
+
+# GitHub Actions iOS构建修复步骤
+# 在现有的iOS构建workflow中添加以下步骤
+
+- name: Clean iOS build cache
+  run: |
+    rm -rf ios/build
+    rm -rf ios/Pods
+    rm -rf ios/.symlinks
+    rm -f ios/Podfile.lock
+    flutter clean
+
+- name: Get Flutter dependencies
+  run: flutter pub get
+
+- name: Update CocoaPods repo
+  run: |
+    cd ios
+    pod repo update
+    pod install --repo-update
+
+- name: Set iOS deployment target
+  run: |
+    # 确保所有配置文件都设置了正确的部署目标
+    echo "IPHONEOS_DEPLOYMENT_TARGET = 13.0" >> ios/Flutter/Debug.xcconfig
+    echo "IPHONEOS_DEPLOYMENT_TARGET = 13.0" >> ios/Flutter/Release.xcconfig
+
+- name: Build iOS app
+  run: flutter build ios --no-codesign --release
