@@ -34,54 +34,57 @@ jobs:
     - name: Flutter Doctor
       run: flutter doctor -v
     
+    - name: Cache pub
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+        key: ${{ runner.os }}-pub-${{ github.run_id }}
+    
     - name: Install dependencies
       run: flutter pub get
     
-    - name: Clean build
-      run: flutter clean
+    - name: Flutter build bundle
+      run: flutter build bundle --release
     
-    - name: Build iOS (no codesign)
-      run: flutter build ios --no-codesign
+    - name: Cache CocoaPods
+      uses: actions/cache@v4
+      with:
+        path: |
+          ios/Pods
+          ~/Library/Caches/CocoaPods
+          ~/.cocoapods
+        key: ${{ runner.os }}-pods-${{ github.run_id }}
+    
+    - name: Install CocoaPods
+      run: |
+        pod repo update
+        pod install
+      working-directory: ios
+    
+    - name: Precache iOS artifacts
+      run: flutter precache --ios
+    
+    - name: Xcode build (codesign disabled)
+      run: |
+        xcodebuild \
+          -workspace ios/Runner.xcworkspace \
+          -scheme Runner \
+          -configuration Release \
+          -sdk iphoneos \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_STYLE=Manual \
+          CODE_SIGN_IDENTITY= \
+          DEVELOPMENT_TEAM= \
+          archive -archivePath build/Runner.xcarchive
     
     - name: Create unsigned IPA
       run: |
         mkdir -p Payload
-        cp -r build/ios/iphoneos/Runner.app Payload/
+        cp -R build/Runner.xcarchive/Products/Applications/Runner.app Payload/Runner.app
         zip -r VoiceFlow-unsigned.ipa Payload
-    
-    - name: Import Certificate & Provisioning Profile
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      env:
-        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-        P12_BASE64: ${{ secrets.P12_BASE64 }}
-        PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
-      run: |
-        # Import certificate
-        echo $P12_BASE64 | base64 --decode > certificate.p12
-        security create-keychain -p "" build.keychain
-        security import certificate.p12 -k build.keychain -P $P12_PASSWORD -T /usr/bin/codesign
-        security list-keychains -s build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "" build.keychain
-        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-        
-        # Import provisioning profile
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        echo $PROVISIONING_PROFILE_BASE64 | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
-    
-    - name: Sign IPA
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      run: |
-        # Get signing identity
-        SIGNING_IDENTITY=$(security find-identity -v -p codesigning build.keychain | head -1 | grep '"' | sed -e 's/[^"]*"//' -e 's/".*//')
-        echo "Signing with identity: $SIGNING_IDENTITY"
-        
-        # Sign the app
-        codesign --force --sign "$SIGNING_IDENTITY" --entitlements ios/Runner/Runner.entitlements Payload/Runner.app
-        
-        # Create signed IPA
-        zip -r VoiceFlow-signed.ipa Payload
-      working-directory: .
     
     - name: Upload unsigned IPA
       uses: actions/upload-artifact@v4
@@ -89,41 +92,6 @@ jobs:
         name: VoiceFlow-unsigned-IPA
         path: VoiceFlow-unsigned.ipa
         retention-days: 30
-    
-    - name: Upload signed IPA
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      uses: actions/upload-artifact@v4
-      with:
-        name: VoiceFlow-signed-IPA
-        path: VoiceFlow-signed.ipa
-        retention-days: 30
-    
-    - name: Create Release
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: VoiceFlow-signed.ipa
-        name: VoiceFlow v${{ github.ref_name }}
-        body: |
-          ## VoiceFlow iOS应用 - ${{ github.ref_name }}
-          
-          ### 功能特性
-          - 🔔 智能语音提醒
-          - 📱 后台运行支持
-          - 🎤 多种语音类型 (系统/AI/自定义音频)
-          - 📋 批量导入提醒
-          - 🌙 锁屏语音播报
-          
-          ### 安装方法
-          1. 下载IPA文件
-          2. 使用Sideloadly或AltStore安装
-          3. 在设备上信任开发者证书
-          
-          ### 系统要求
-          - iOS 12.0+
-          - iPhone/iPad
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test-web:
     runs-on: ubuntu-latest
