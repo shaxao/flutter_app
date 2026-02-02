@@ -10,7 +10,6 @@ import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/voice_service.dart';
 import 'core/services/api_service.dart';
-import 'core/services/network_service.dart';
 import 'features/home/presentation/pages/home_page.dart';
 import 'features/reminder/presentation/providers/voice_reminder_provider.dart';
 
@@ -38,41 +37,11 @@ void main() async {
   }
   
   try {
-    // 检查网络连接
-    print('🌐 开始网络连接检查...');
-    final hasNetwork = await NetworkService.instance.checkConnection();
-    if (hasNetwork) {
-      print('✅ 网络连接正常');
-      
-      // 检查服务器连接
-      final hasServerConnection = await NetworkService.instance.checkServerConnection('https://service.muhuo.site');
-      if (hasServerConnection) {
-        print('✅ 服务器连接正常');
-      } else {
-        print('⚠️ 服务器连接异常');
-      }
-    } else {
-      print('⚠️ 网络连接异常');
-    }
-  } catch (e) {
-    print('❌ 网络检查失败: $e');
-  }
-  
-  try {
     // 初始化 API 服务
     await ApiService.instance.initialize(baseUrl: 'https://service.muhuo.site');
     print('✅ API 服务初始化成功');
-    
-    // 测试 API 连接
-    final isConnected = await ApiService.instance.healthCheck();
-    if (isConnected) {
-      print('✅ API 服务连接正常');
-    } else {
-      print('⚠️ API 服务连接异常，但应用将继续运行');
-    }
   } catch (e) {
     print('❌ API 服务初始化失败: $e');
-    print('⚠️ 应用将在离线模式下运行');
   }
   
   try {

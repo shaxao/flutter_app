@@ -11,14 +11,16 @@ class ApiService {
   String? _token;
   
   Future<void> initialize({String? baseUrl}) async {
-    _baseUrl = baseUrl ?? await _getStoredBaseUrl() ?? 'http://localhost:5000';
+    _baseUrl = baseUrl ?? await _getStoredBaseUrl() ?? 'https://service.muhuo.site';
     
     _dio = Dio(BaseOptions(
       baseUrl: _baseUrl!,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     ));
     
@@ -28,18 +30,32 @@ class ApiService {
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
-        print('API Request: ${options.method} ${options.path}');
+        print('🌐 API Request: ${options.method} ${options.uri}');
         handler.next(options);
       },
       onResponse: (response, handler) {
-        print('API Response: ${response.statusCode} ${response.requestOptions.path}');
+        print('✅ API Response: ${response.statusCode} ${response.requestOptions.uri}');
         handler.next(response);
       },
       onError: (error, handler) {
-        print('API Error: ${error.message}');
+        print('❌ API Error: ${error.message}');
+        print('❌ Error Type: ${error.type}');
+        if (error.response != null) {
+          print('❌ Response Status: ${error.response?.statusCode}');
+          print('❌ Response Data: ${error.response?.data}');
+        }
         handler.next(error);
       },
     ));
+    
+    // 测试连接
+    try {
+      print('🔍 Testing connection to: $_baseUrl');
+      await healthCheck();
+      print('✅ API 连接测试成功');
+    } catch (e) {
+      print('⚠️ API 连接测试失败，但继续初始化: $e');
+    }
   }
   
   Future<String?> _getStoredBaseUrl() async {
@@ -180,11 +196,24 @@ class ApiService {
   // 健康检查
   Future<bool> healthCheck() async {
     try {
+      print('🏥 开始健康检查: $_baseUrl/health');
       final response = await _dio.get('/health');
-      return response.statusCode == 200;
+      final isHealthy = response.statusCode == 200;
+      print(isHealthy ? '✅ 服务器健康检查通过' : '⚠️ 服务器健康检查失败');
+      return isHealthy;
     } catch (e) {
-      print('健康检查失败: $e');
-      return false;
+      print('❌ 健康检查异常: $e');
+      // 尝试备用检查路径
+      try {
+        print('🔄 尝试备用健康检查路径: $_baseUrl/');
+        final response = await _dio.get('/');
+        final isHealthy = response.statusCode == 200;
+        print(isHealthy ? '✅ 备用健康检查通过' : '⚠️ 备用健康检查失败');
+        return isHealthy;
+      } catch (e2) {
+        print('❌ 备用健康检查也失败: $e2');
+        return false;
+      }
     }
   }
   
