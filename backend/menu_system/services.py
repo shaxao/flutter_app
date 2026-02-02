@@ -385,14 +385,14 @@ def add_push_subscription(endpoint, p256dh, auth):
         existing = s.query(PushSubscription).filter_by(endpoint=endpoint).first()
         if existing:
             # 更新密钥
-            existing.p256dh_key = p256dh
-            existing.auth_key = auth
+            existing.p256dh = p256dh
+            existing.auth = auth
         else:
             # 创建新订阅
             subscription = PushSubscription(
                 endpoint=endpoint,
-                p256dh_key=p256dh,
-                auth_key=auth
+                p256dh=p256dh,
+                auth=auth
             )
             s.add(subscription)
         s.commit()

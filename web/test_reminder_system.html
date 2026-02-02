@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提醒系统测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status.warning {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .log {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .stat-item {
+      background-color: #e9ecef;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🔔 提醒系统测试页面</h1>
+
+  <div class="container">
+    <h2>系统状态</h2>
+    <div id="systemStatus"></div>
+    <button onclick="checkSystemStatus()">刷新状态</button>
+    <button onclick="initializeSystem()">初始化系统</button>
+  </div>
+
+  <div class="container">
+    <h2>Web Push 测试</h2>
+    <div id="pushStatus"></div>
+    <button onclick="testPush()">测试推送</button>
+    <button onclick="resetPush()">重置推送</button>
+  </div>
+
+  <div class="container">
+    <h2>语音服务测试</h2>
+    <div id="voiceStatus"></div>
+    <button onclick="testVoice()">测试语音</button>
+    <button onclick="unlockVoice()">解锁语音</button>
+  </div>
+
+  <div class="container">
+    <h2>提醒管理器状态</h2>
+    <div id="reminderStats" class="stats"></div>
+    <button onclick="refreshReminders()">刷新提醒</button>
+    <button onclick="addTestReminder()">添加测试提醒</button>
+  </div>
+
+  <div class="container">
+    <h2>系统日志</h2>
+    <div id="logContainer" class="log"></div>
+    <button onclick="clearLog()">清空日志</button>
+  </div>
+
+  <!-- 引入必要的脚本 -->
+  <script src="/voice-service.js"></script>
+  <script src="/push-manager.js"></script>
+  <script src="/reminder-manager.js"></script>
+
+  <script>
+    let logContainer;
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] ${message}`;
+      console.log(logEntry);
+
+      if (logContainer) {
+        const div = document.createElement('div');
+        div.textContent = logEntry;
+        div.style.color = type === 'error' ? 'red' : type === 'warning' ? 'orange' : 'black';
+        logContainer.appendChild(div);
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+    }
+
+    function clearLog() {
+      if (logContainer) {
+        logContainer.innerHTML = '';
+      }
+    }
+
+    async function checkSystemStatus() {
+      log('检查系统状态...');
+
+      const statusDiv = document.getElementById('systemStatus');
+      let html = '';
+
+      // 检查各个服务的状态
+      const checks = [
+        { name: 'Service Worker', check: () => 'serviceWorker' in navigator },
+        { name: 'Push Manager', check: () => 'PushManager' in window },
+        { name: 'Notifications', check: () => 'Notification' in window },
+        { name: 'Speech Synthesis', check: () => 'speechSynthesis' in window },
+        { name: 'Web Workers', check: () => typeof Worker !== 'undefined' },
+        { name: 'BroadcastChannel', check: () => typeof BroadcastChannel !== 'undefined' }
+      ];
+
+      for (const check of checks) {
+        const supported = check.check();
+        html += `<div class="status ${supported ? 'success' : 'error'}">
+                    ${check.name}: ${supported ? '✅ 支持' : '❌ 不支持'}
+                </div>`;
+      }
+
+      // 检查权限状态
+      if ('Notification' in window) {
+        html += `<div class="status ${Notification.permission === 'granted' ? 'success' : 'warning'}">
+                    通知权限: ${Notification.permission}
+                </div>`;
+      }
+
+      statusDiv.innerHTML = html;
+      log('系统状态检查完成');
+    }
+
+    async function initializeSystem() {
+      log('初始化系统...');
+
+      try {
+        // 初始化语音服务
+        if (window.flutterVoiceService) {
+          log('初始化语音服务...');
+          // 语音服务通常需要用户交互才能解锁
+        }
+
+        // 初始化推送管理器
+        if (window.flutterPushManager) {
+          log('初始化推送管理器...');
+          await window.flutterPushManager.init();
+        }
+
+        // 初始化提醒管理器
+        if (window.flutterReminderManager) {
+          log('初始化提醒管理器...');
+          await window.flutterReminderManager.init();
+        }
+
+        log('系统初始化完成', 'success');
+        await checkSystemStatus();
+        await updateReminderStats();
+
+      } catch (error) {
+        log(`系统初始化失败: ${error.message}`, 'error');
+      }
+    }
+
+    async function testPush() {
+      log('测试推送...');
+
+      try {
+        const response = await fetch('https://service.muhuo.site/api/v1/push/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          log('推送测试请求已发送', 'success');
+        } else {
+          log(`推送测试失败: ${response.status}`, 'error');
+        }
+      } catch (error) {
+        log(`推送测试异常: ${error.message}`, 'error');
+      }
+    }
+
+    async function resetPush() {
+      log('重置推送系统...');
+
+      try {
+        if (window.flutterPushManager) {
+          await window.flutterPushManager.reset();
+          log('推送系统已重置', 'success');
+        }
+      } catch (error) {
+        log(`重置推送系统失败: ${error.message}`, 'error');
+      }
+    }
+
+    function testVoice() {
+      log('测试语音...');
+
+      try {
+        if (window.flutterVoiceService) {
+          window.flutterVoiceService.speak('这是一个语音测试，如果您能听到这段话，说明语音服务正常工作。');
+          log('语音测试已触发', 'success');
+        } else {
+          log('语音服务不可用', 'error');
+        }
+      } catch (error) {
+        log(`语音测试失败: ${error.message}`, 'error');
+      }
+    }
+
+    function unlockVoice() {
+      log('解锁语音服务...');
+
+      try {
+        if (window.flutterVoiceService) {
+          window.flutterVoiceService.unlock();
+          log('语音服务已解锁', 'success');
+        } else {
+          log('语音服务不可用', 'error');
+        }
+      } catch (error) {
+        log(`解锁语音服务失败: ${error.message}`, 'error');
+      }
+    }
+
+    async function refreshReminders() {
+      log('刷新提醒列表...');
+
+      try {
+        if (window.flutterReminderManager) {
+          await window.flutterReminderManager.refreshReminders();
+          log('提醒列表已刷新', 'success');
+          await updateReminderStats();
+        } else {
+          log('提醒管理器不可用', 'error');
+        }
+      } catch (error) {
+        log(`刷新提醒失败: ${error.message}`, 'error');
+      }
+    }
+
+    async function addTestReminder() {
+      log('添加测试提醒...');
+
+      try {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 1); // 1分钟后的提醒
+        const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const response = await fetch('https://service.muhuo.site/api/v1/voice-reminders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            time: time,
+            content: '这是一个测试提醒，用于验证提醒系统是否正常工作',
+            reminder_type: 'ai_voice',
+            voice_model: 'tts-1'
+          })
+        });
+
+        if (response.ok) {
+          log(`测试提醒已添加，将在 ${time} 触发`, 'success');
+          await refreshReminders();
+        } else {
+          log(`添加测试提醒失败: ${response.status}`, 'error');
+        }
+      } catch (error) {
+        log(`添加测试提醒异常: ${error.message}`, 'error');
+      }
+    }
+
+    async function updateReminderStats() {
+      try {
+        if (window.flutterReminderManager) {
+          const stats = window.flutterReminderManager.getStats();
+          const statsDiv = document.getElementById('reminderStats');
+
+          statsDiv.innerHTML = `
+                        <div class="stat-item">
+                            <strong>总提醒数</strong><br>
+                            ${stats.totalReminders}
+                        </div>
+                        <div class="stat-item">
+                            <strong>启用提醒数</strong><br>
+                            ${stats.enabledReminders}
+                        </div>
+                        <div class="stat-item">
+                            <strong>即将到来</strong><br>
+                            ${stats.upcomingReminders}
+                        </div>
+                        <div class="stat-item">
+                            <strong>预加载数量</strong><br>
+                            ${stats.preloadedCount}
+                        </div>
+                        <div class="stat-item">
+                            <strong>当前时间</strong><br>
+                            ${stats.currentTime}
+                        </div>
+                        <div class="stat-item">
+                            <strong>Worker状态</strong><br>
+                            ${stats.workerActive ? '✅ 活跃' : '❌ 停止'}
+                        </div>
+                    `;
+        }
+      } catch (error) {
+        log(`更新提醒统计失败: ${error.message}`, 'error');
+      }
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      logContainer = document.getElementById('logContainer');
+      log('页面加载完成，开始初始化...');
+
+      await checkSystemStatus();
+
+      // 等待一下让其他脚本加载完成
+      setTimeout(async () => {
+        await initializeSystem();
+
+        // 定期更新统计信息
+        setInterval(updateReminderStats, 5000);
+      }, 1000);
+    });
+
+    // 监听提醒触发事件
+    window.addEventListener('reminder-tick', (event) => {
+      // log(`提醒检查: ${event.detail.time}`);
+    });
+  </script>
+</body>
+
+</html>

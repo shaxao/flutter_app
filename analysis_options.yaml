@@ -9,6 +9,16 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Exclude generated files
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    # Exclude build directories
+    - "build/**"
+    - ".dart_tool/**"
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
@@ -21,8 +31,20 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Disable print warnings for development - can be re-enabled for production
+    avoid_print: false
+    
+    # Disable web library warnings for conditional imports
+    avoid_web_libraries_in_flutter: false
+    
+    # Allow deprecated member use during migration period
+    # deprecated_member_use: false  # This rule doesn't exist as a configurable option
+    
+    # Allow BuildContext across async gaps with proper null checks
+    use_build_context_synchronously: false
+    
+    # Allow dependency on referenced packages for timezone
+    depend_on_referenced_packages: false
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

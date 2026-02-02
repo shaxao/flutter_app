@@ -107,6 +107,6 @@ class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
     id = Column(Integer, primary_key=True)
     endpoint = Column(String(512), nullable=False)
-    p256dh_key = Column(String(256), nullable=False)
-    auth_key = Column(String(256), nullable=False)
+    p256dh = Column(String(256), nullable=False)
+    auth = Column(String(256), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

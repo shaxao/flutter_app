@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后台语音播放测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status.warning {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .log {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .test-section {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    .test-section h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🔊 后台语音播放测试</h1>
+
+  <div class="container">
+    <h2>系统状态检查</h2>
+    <div id="systemStatus"></div>
+    <button onclick="checkSystemStatus()">检查系统状态</button>
+  </div>
+
+  <div class="container">
+    <div class="test-section">
+      <h3>1. 基础语音测试</h3>
+      <p>测试基本的语音播放功能</p>
+      <input type="text" id="basicText" value="这是一个基础语音测试" placeholder="输入要播放的文本">
+      <br>
+      <button onclick="testBasicVoice()">播放语音</button>
+      <button onclick="testSpeechSynthesis()">测试SpeechSynthesis</button>
+    </div>
+
+    <div class="test-section">
+      <h3>2. 后台语音测试</h3>
+      <p>测试后台语音播放功能（锁屏/后台状态下）</p>
+      <input type="text" id="backgroundText" value="这是后台语音播放测试，请切换到后台或锁屏状态" placeholder="输入要播放的文本">
+      <br>
+      <button onclick="testBackgroundVoice()">后台语音播放</button>
+      <button onclick="initBackgroundService()">初始化后台服务</button>
+    </div>
+
+    <div class="test-section">
+      <h3>3. Media Session 测试</h3>
+      <p>测试Media Session API（用于锁屏控制）</p>
+      <button onclick="testMediaSession()">设置Media Session</button>
+      <button onclick="testKeepAlive()">启动保活音频</button>
+    </div>
+
+    <div class="test-section">
+      <h3>4. 推送通知测试</h3>
+      <p>测试推送通知触发的语音播放</p>
+      <button onclick="requestNotificationPermission()">请求通知权限</button>
+      <button onclick="testNotificationVoice()">测试通知语音</button>
+      <button onclick="simulatePushNotification()">模拟推送通知</button>
+    </div>
+
+    <div class="test-section">
+      <h3>5. TTS API 测试</h3>
+      <p>测试后端TTS API</p>
+      <input type="text" id="ttsText" value="测试后端语音合成API" placeholder="输入要合成的文本">
+      <br>
+      <button onclick="testTTSAPI()">测试TTS API</button>
+      <button onclick="playTTSAudio()">播放TTS音频</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>测试日志</h2>
+    <div id="logContainer" class="log"></div>
+    <button onclick="clearLog()">清空日志</button>
+  </div>
+
+  <!-- 引入后台语音服务 -->
+  <script src="/background-voice-service.js"></script>
+  <script src="/voice-service.js"></script>
+
+  <script>
+    let logContainer;
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] ${message}`;
+      console.log(logEntry);
+
+      if (logContainer) {
+        const div = document.createElement('div');
+        div.textContent = logEntry;
+        div.style.color = type === 'error' ? 'red' : type === 'warning' ? 'orange' : 'black';
+        logContainer.appendChild(div);
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+    }
+
+    function clearLog() {
+      if (logContainer) {
+        logContainer.innerHTML = '';
+      }
+    }
+
+    async function checkSystemStatus() {
+      log('检查系统状态...');
+
+      const statusDiv = document.getElementById('systemStatus');
+      let html = '';
+
+      // 检查各个服务的状态
+      const checks = [
+        { name: 'Service Worker', check: () => 'serviceWorker' in navigator },
+        { name: 'Push Manager', check: () => 'PushManager' in window },
+        { name: 'Notifications', check: () => 'Notification' in window },
+        { name: 'Speech Synthesis', check: () => 'speechSynthesis' in window },
+        { name: 'Web Audio API', check: () => 'AudioContext' in window || 'webkitAudioContext' in window },
+        { name: 'Media Session', check: () => 'mediaSession' in navigator },
+        { name: 'Wake Lock', check: () => 'wakeLock' in navigator },
+        { name: 'Background Voice Service', check: () => !!window.backgroundVoiceService },
+        { name: 'Flutter Voice Service', check: () => !!window.flutterVoiceService }
+      ];
+
+      for (const check of checks) {
+        const supported = check.check();
+        html += `<div class="status ${supported ? 'success' : 'error'}">
+                    ${check.name}: ${supported ? '✅ 支持' : '❌ 不支持'}
+                </div>`;
+      }
+
+      // 检查权限状态
+      if ('Notification' in window) {
+        html += `<div class="status ${Notification.permission === 'granted' ? 'success' : 'warning'}">
+                    通知权限: ${Notification.permission}
+                </div>`;
+      }
+
+      statusDiv.innerHTML = html;
+      log('系统状态检查完成');
+    }
+
+    function testBasicVoice() {
+      const text = document.getElementById('basicText').value;
+      log(`测试基础语音: "${text}"`);
+
+      if (window.flutterVoiceService) {
+        window.flutterVoiceService.speak(text);
+        log('基础语音播放已触发', 'success');
+      } else {
+        log('Flutter语音服务不可用', 'error');
+      }
+    }
+
+    function testSpeechSynthesis() {
+      const text = document.getElementById('basicText').value;
+      log(`测试SpeechSynthesis: "${text}"`);
+
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN';
+        utterance.volume = 1.0;
+
+        utterance.onstart = () => log('SpeechSynthesis开始播放', 'success');
+        utterance.onend = () => log('SpeechSynthesis播放结束', 'success');
+        utterance.onerror = (e) => log(`SpeechSynthesis错误: ${e.error}`, 'error');
+
+        speechSynthesis.speak(utterance);
+      } else {
+        log('SpeechSynthesis不支持', 'error');
+      }
+    }
+
+    async function testBackgroundVoice() {
+      const text = document.getElementById('backgroundText').value;
+      log(`测试后台语音播放: "${text}"`);
+
+      if (window.backgroundVoiceService) {
+        try {
+          const success = await window.backgroundVoiceService.speakInBackground(text, {
+            volume: 1.0,
+            voiceModel: 'tts-1'
+          });
+
+          if (success) {
+            log('后台语音播放成功', 'success');
+          } else {
+            log('后台语音播放失败', 'error');
+          }
+        } catch (error) {
+          log(`后台语音播放异常: ${error.message}`, 'error');
+        }
+      } else {
+        log('后台语音服务不可用', 'error');
+      }
+    }
+
+    async function initBackgroundService() {
+      log('初始化后台语音服务...');
+
+      if (window.backgroundVoiceService) {
+        try {
+          await window.backgroundVoiceService.init();
+          log('后台语音服务初始化成功', 'success');
+        } catch (error) {
+          log(`后台语音服务初始化失败: ${error.message}`, 'error');
+        }
+      } else {
+        log('后台语音服务不存在', 'error');
+      }
+    }
+
+    async function testMediaSession() {
+      log('测试Media Session API...');
+
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: '语音播放测试',
+            artist: 'VoiceFlow',
+            album: '测试专辑',
+            artwork: [
+              { src: '/icons/Icon-192.png', sizes: '192x192', type: 'image/png' }
+            ]
+          });
+
+          navigator.mediaSession.playbackState = 'playing';
+
+          navigator.mediaSession.setActionHandler('play', () => {
+            log('Media Session播放按钮被点击', 'success');
+          });
+
+          log('Media Session设置成功', 'success');
+        } catch (error) {
+          log(`Media Session设置失败: ${error.message}`, 'error');
+        }
+      } else {
+        log('Media Session API不支持', 'error');
+      }
+    }
+
+    async function testKeepAlive() {
+      log('测试保活音频...');
+
+      if (window.backgroundVoiceService && window.backgroundVoiceService.resumeKeepAlive) {
+        try {
+          await window.backgroundVoiceService.resumeKeepAlive();
+          log('保活音频启动成功', 'success');
+        } catch (error) {
+          log(`保活音频启动失败: ${error.message}`, 'error');
+        }
+      } else {
+        log('保活音频功能不可用', 'error');
+      }
+    }
+
+    async function requestNotificationPermission() {
+      log('请求通知权限...');
+
+      if ('Notification' in window) {
+        try {
+          const permission = await Notification.requestPermission();
+          log(`通知权限状态: ${permission}`, permission === 'granted' ? 'success' : 'warning');
+        } catch (error) {
+          log(`请求通知权限失败: ${error.message}`, 'error');
+        }
+      } else {
+        log('通知API不支持', 'error');
+      }
+    }
+
+    function testNotificationVoice() {
+      log('测试通知语音...');
+
+      if (Notification.permission === 'granted') {
+        const notification = new Notification('语音测试通知', {
+          body: '点击此通知播放语音',
+          icon: '/icons/Icon-192.png',
+          requireInteraction: true,
+          data: { text: '这是通知触发的语音播放测试' }
+        });
+
+        notification.onclick = () => {
+          log('通知被点击，播放语音...', 'success');
+          const text = notification.data.text;
+
+          if (window.backgroundVoiceService) {
+            window.backgroundVoiceService.speakInBackground(text);
+          } else if (window.flutterVoiceService) {
+            window.flutterVoiceService.speak(text);
+          }
+
+          notification.close();
+        };
+
+        log('测试通知已发送', 'success');
+      } else {
+        log('通知权限未授予', 'error');
+      }
+    }
+
+    function simulatePushNotification() {
+      log('模拟推送通知...');
+
+      // 模拟BroadcastChannel消息
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('reminder-channel');
+        channel.postMessage({
+          type: 'PUSH_RECEIVED_WAKE_UP',
+          payload: {
+            body: '这是模拟的推送通知语音播放测试',
+            type: 'test'
+          },
+          timestamp: Date.now()
+        });
+        channel.close();
+
+        log('模拟推送消息已发送', 'success');
+      } else {
+        log('BroadcastChannel不支持', 'error');
+      }
+    }
+
+    async function testTTSAPI() {
+      const text = document.getElementById('ttsText').value;
+      log(`测试TTS API: "${text}"`);
+
+      try {
+        const response = await fetch('https://service.muhuo.site/api/v1/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            voice_model: 'tts-1',
+            format: 'wav'
+          })
+        });
+
+        if (response.ok) {
+          log('TTS API调用成功', 'success');
+
+          const blob = await response.blob();
+          const audioUrl = URL.createObjectURL(blob);
+
+          // 保存音频URL供播放使用
+          window.lastTTSAudioUrl = audioUrl;
+
+          log(`TTS音频已生成，大小: ${blob.size} bytes`, 'success');
+        } else {
+          log(`TTS API调用失败: ${response.status}`, 'error');
+        }
+      } catch (error) {
+        log(`TTS API异常: ${error.message}`, 'error');
+      }
+    }
+
+    function playTTSAudio() {
+      log('播放TTS音频...');
+
+      if (window.lastTTSAudioUrl) {
+        const audio = new Audio(window.lastTTSAudioUrl);
+        audio.volume = 1.0;
+
+        audio.onplay = () => log('TTS音频开始播放', 'success');
+        audio.onended = () => log('TTS音频播放结束', 'success');
+        audio.onerror = (e) => log(`TTS音频播放错误: ${e.message}`, 'error');
+
+        audio.play().catch(error => {
+          log(`TTS音频播放失败: ${error.message}`, 'error');
+        });
+      } else {
+        log('没有可播放的TTS音频，请先测试TTS API', 'warning');
+      }
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      logContainer = document.getElementById('logContainer');
+      log('页面加载完成，开始初始化...');
+
+      await checkSystemStatus();
+
+      // 监听页面可见性变化
+      document.addEventListener('visibilitychange', () => {
+        const state = document.hidden ? '后台' : '前台';
+        log(`页面状态变化: ${state}`);
+      });
+
+      log('初始化完成，可以开始测试');
+    });
+  </script>
+</body>
+
+</html>

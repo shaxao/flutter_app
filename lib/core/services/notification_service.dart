@@ -1,6 +1,3 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/foundation.dart';
 import 'notification_service_web.dart' if (dart.library.io) 'notification_service_mobile.dart';
 
 /// 本地通知服务 - iOS原生通知支持

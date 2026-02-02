@@ -44,9 +44,37 @@ class FlutterWebReminderManager {
   handlePushWakeUp(payload) {
     console.log('[ReminderManager] Handling push wake-up:', payload);
 
-    // Trigger voice playback
-    if (window.flutterVoiceService && payload.body) {
-      window.flutterVoiceService.speak(`提醒事项：${payload.body}`);
+    // 优先使用后台语音服务
+    if (window.backgroundVoiceService) {
+      window.backgroundVoiceService.speakInBackground(`提醒事项：${payload.body}`, {
+        volume: 1.0,
+        voiceModel: 'tts-1'
+      }).then(success => {
+        if (success) {
+          console.log('[ReminderManager] Background voice playback successful');
+        } else {
+          console.warn('[ReminderManager] Background voice playback failed, trying fallback');
+          this.fallbackVoicePlayback(payload.body);
+        }
+      }).catch(error => {
+        console.error('[ReminderManager] Background voice error:', error);
+        this.fallbackVoicePlayback(payload.body);
+      });
+    } else {
+      // 备选方案
+      this.fallbackVoicePlayback(payload.body);
+    }
+  }
+
+  fallbackVoicePlayback(content) {
+    // 备选语音播放方案
+    if (window.flutterVoiceService) {
+      window.flutterVoiceService.speak(`提醒事项：${content}`);
+    } else if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(`提醒事项：${content}`);
+      utterance.lang = 'zh-CN';
+      utterance.volume = 1.0;
+      speechSynthesis.speak(utterance);
     }
   }
 

@@ -1,5 +1,3 @@
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter/foundation.dart';
 import 'voice_service_web.dart' if (dart.library.io) 'voice_service_mobile.dart';
 
 /// 语音合成服务 - 支持后台和锁屏播报

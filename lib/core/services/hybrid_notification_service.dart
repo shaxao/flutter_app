@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'notification_service.dart';
 import 'web_push_service.dart';
-import 'api_service.dart';
 import '../../features/reminder/domain/models/voice_reminder.dart';
 
 /// 混合通知服务 - 基于 od_web 实现的完整通知系统
@@ -97,15 +96,6 @@ class HybridNotificationService {
     try {
       // 这里需要调用服务器 API 来注册提醒
       // 服务器会在指定时间发送 Web Push 通知
-      
-      final reminderData = {
-        'id': reminder.id,
-        'content': reminder.content,
-        'time': reminder.time,
-        'reminder_type': reminder.reminderType.value,
-        'enabled': reminder.enabled,
-        'voice_model': reminder.voiceModel,
-      };
       
       // 注意：这里需要服务器端实现对应的 API
       // 目前服务器端已经有提醒调度任务，我们需要确保数据同步

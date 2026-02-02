@@ -2099,6 +2099,81 @@ def voice_reminders_batch_create():
         for r in results
     ]), 201
 
+@app.post('/api/v1/tts')
+def text_to_speech():
+    """文本转语音API - 用于后台语音播放"""
+    try:
+        body = request.json or {}
+        text = body.get('text', '')
+        voice_model = body.get('voice_model', 'tts-1')
+        format_type = body.get('format', 'mp3')
+        
+        if not text:
+            return jsonify({'error': 'Missing text parameter'}), 400
+        
+        # 限制文本长度
+        if len(text) > 500:
+            text = text[:500]
+        
+        # 使用系统TTS生成音频文件
+        try:
+            import subprocess
+            import tempfile
+            import os
+            
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                temp_path = temp_file.name
+            
+            try:
+                # 尝试使用espeak（Linux系统）
+                subprocess.run([
+                    'espeak', '-v', 'zh', '-s', '150', '-a', '100',
+                    '-w', temp_path, text
+                ], check=True, capture_output=True)
+                
+                # 读取生成的音频文件
+                with open(temp_path, 'rb') as f:
+                    audio_data = f.read()
+                
+                # 清理临时文件
+                os.unlink(temp_path)
+                
+                # 返回音频数据
+                response = make_response(audio_data)
+                response.headers['Content-Type'] = 'audio/wav'
+                response.headers['Content-Disposition'] = 'inline; filename="tts.wav"'
+                response.headers['Cache-Control'] = 'public, max-age=3600'
+                
+                return response
+                
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # espeak不可用，使用备选方案
+                os.unlink(temp_path)
+                raise Exception("espeak not available")
+                
+        except Exception as e:
+            print(f"System TTS failed: {e}")
+            
+            # 备选方案：返回简单的提示音
+            import base64
+            
+            # 简单的提示音（Base64编码的短音频）
+            beep_audio_b64 = 'UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT'
+            beep_audio = base64.b64decode(beep_audio_b64)
+            
+            # 创建响应
+            response = make_response(beep_audio)
+            response.headers['Content-Type'] = 'audio/wav'
+            response.headers['Content-Disposition'] = 'inline; filename="beep.wav"'
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+            
+            return response
+            
+    except Exception as e:
+        print(f"TTS API error: {e}")
+        return jsonify({'error': 'TTS processing failed'}), 500
+
 @app.patch('/api/v1/voice-reminders/<int:rid>')
 def voice_reminders_update(rid):
     from menu_system.services import update_voice_reminder
@@ -2199,6 +2274,18 @@ def push_subscriptions_add():
         return jsonify({'error': 'Missing push data'}), 400
     add_push_subscription(endpoint, p256dh, auth)
     return jsonify({'ok': True})
+
+@app.get('/api/v1/push-subscriptions')
+def push_subscriptions_list():
+    from menu_system.db import SessionLocal
+    from menu_system.models import PushSubscription
+    with SessionLocal() as s:
+        subs = s.query(PushSubscription).all()
+        return jsonify([{
+            'id': sub.id,
+            'endpoint': sub.endpoint,
+            'created_at': sub.created_at.isoformat() if sub.created_at else None
+        } for sub in subs])
 
 @app.delete('/api/v1/push-subscriptions')
 def push_subscriptions_delete():
@@ -2380,6 +2467,10 @@ def test_push_now():
                 'type': 'test'
             })
     return jsonify({'ok': True, 'count': len(subs)})
+
+@app.post('/api/v1/push/test')
+def test_push_alias():
+    return test_push_now()
 
 def reminder_scheduler_task():
     from menu_system.db import SessionLocal

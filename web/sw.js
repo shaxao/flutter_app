@@ -113,8 +113,51 @@ self.addEventListener('push', (event) => {
     ]
   }
 
+  // 关键：在Service Worker中直接尝试播放音频
+  const audioPlayPromise = (async () => {
+    try {
+      console.log('[SW] Attempting background audio playback...');
+
+      // 方法1: 尝试使用TTS API获取音频
+      const ttsResponse = await fetch('https://service.muhuo.site/api/v1/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: data.body || '您有一条新提醒',
+          voice_model: 'tts-1',
+          format: 'mp3'
+        })
+      });
+
+      if (ttsResponse.ok) {
+        const audioBlob = await ttsResponse.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // 在Service Worker中播放音频（实验性）
+        const audio = new Audio(audioUrl);
+        audio.volume = 1.0;
+
+        try {
+          await audio.play();
+          console.log('[SW] Background audio playback successful');
+        } catch (playError) {
+          console.warn('[SW] Direct audio play failed:', playError);
+
+          // 备选方案：通过通知点击触发
+          console.log('[SW] Falling back to notification-triggered playback');
+        }
+
+        // 清理资源
+        setTimeout(() => URL.revokeObjectURL(audioUrl), 60000);
+      }
+
+    } catch (error) {
+      console.error('[SW] Background audio playback failed:', error);
+    }
+  })();
+
   // iOS 必须在 push 事件中同步调用 showNotification，不能异步太久
-  // Execute all three operations in parallel for maximum reliability
+  // Execute all operations in parallel for maximum reliability
   const notificationPromise = self.registration.showNotification(
     '🔔 食材过期提醒',
     options
@@ -131,7 +174,8 @@ self.addEventListener('push', (event) => {
       const channel = new BroadcastChannel('reminder-channel')
       channel.postMessage({
         type: 'PUSH_RECEIVED_WAKE_UP',
-        payload: data
+        payload: data,
+        timestamp: Date.now()
       })
       channel.close()
       console.log('[SW] BroadcastChannel message sent')
@@ -149,7 +193,8 @@ self.addEventListener('push', (event) => {
     clients.forEach((client) => {
       client.postMessage({
         type: 'PUSH_RECEIVED_WAKE_UP',
-        payload: data
+        payload: data,
+        timestamp: Date.now()
       })
     })
   }).catch((e) => {
@@ -157,7 +202,7 @@ self.addEventListener('push', (event) => {
   })
 
   event.waitUntil(
-    Promise.all([notificationPromise, broadcastPromise, clientsPromise])
+    Promise.all([notificationPromise, broadcastPromise, clientsPromise, audioPlayPromise])
   )
 })
 
