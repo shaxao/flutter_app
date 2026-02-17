@@ -233,6 +233,19 @@ class VoiceReminderProvider extends ChangeNotifier {
     }
   }
 
+  Future<String> uploadAudioBytes(List<int> bytes, String filename) async {
+    try {
+      _clearError();
+      final filePath = await _repository.uploadAudioBytes(bytes, filename);
+      debugPrint('[VoiceReminderProvider] Uploaded audio bytes: $filePath');
+      return filePath;
+    } catch (e) {
+      _setError('上传音频数据失败: $e');
+      debugPrint('[VoiceReminderProvider] Failed to upload audio bytes: $e');
+      rethrow;
+    }
+  }
+
   // Test methods
   Future<void> testSystemNotification() async {
     try {

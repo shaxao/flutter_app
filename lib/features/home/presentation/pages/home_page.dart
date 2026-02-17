@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../reminder/presentation/pages/reminder_page.dart';
 import '../../../todo/presentation/pages/todo_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 
-/// VoiceFlow 首页 - 专注于语音提醒和待办事项
+/// VoiceFlow 首页 - 极简黑白红设计
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -14,17 +16,18 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: _buildBody(),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
-  
+
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
@@ -34,60 +37,65 @@ class _HomePageState extends State<HomePage> {
       case 2:
         return const TodoPage();
       case 3:
-        return _buildSettingsPage();
+        return const SettingsPage();
       default:
         return _buildHomePage();
     }
   }
-  
+
   Widget _buildHomePage() {
     return CustomScrollView(
       slivers: [
-        // Hero Section
+        // Header
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // VoiceFlow 大标题
                 Text(
-                  'VoiceFlow',
-                  style: GoogleFonts.inter(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1E293B),
-                    letterSpacing: -0.02,
-                    height: 1.1,
-                  ),
+                  'VOICEFLOW',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        color: AppTheme.textPrimary,
+                        letterSpacing: 2.0, // Wide spacing for premium feel
+                      ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '智能语音助手',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF475569),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 2,
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '智能语音助手',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppTheme.primary,
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 32),
-                
-                // 今日概览卡片
-                _buildTodayOverview(),
-                
-                const SizedBox(height: 24),
-                
-                // 快捷操作
+                const SizedBox(height: 48),
+
+                // Overview Card
+                _buildOverviewCard(),
+
+                const SizedBox(height: 48),
+
+                // Quick Actions Title
                 Text(
                   '快捷操作',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1E293B),
-                  ),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                        letterSpacing: 1.5,
+                      ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 _buildQuickActions(),
               ],
             ),
@@ -96,227 +104,144 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
-  
-  Widget _buildTodayOverview() {
+
+  Widget _buildOverviewCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: AppTheme.surface,
+        border: Border.all(color: AppTheme.border),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.mic_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '今日概览',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '语音助手为您服务',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
+              Icon(Icons.mic_none_outlined, color: AppTheme.primary, size: 32),
+              Text(
+                '今日概览',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 1.0,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          
-          // 统计信息
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.notifications_active_rounded,
-                  label: '今日提醒',
-                  value: '5',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.check_circle_rounded,
-                  label: '已完成',
-                  value: '3',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.schedule_rounded,
-                  label: '下一个',
-                  value: '2h',
-                ),
-              ),
-            ],
+          const SizedBox(height: 24),
+          Text(
+            '系统运行中',
+            style: Theme.of(context).textTheme.displayMedium,
           ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildStatItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.white, size: 20),
           const SizedBox(height: 8),
           Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+            '语音指令准备就绪',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.8),
-            ),
+          const SizedBox(height: 32),
+
+          // Stats Row
+          Row(
+            children: [
+              _buildStat('5', '提醒'),
+              const SizedBox(width: 48),
+              _buildStat('3', '任务'),
+              const SizedBox(width: 48),
+              _buildStat('2h', '下一个'),
+            ],
           ),
         ],
       ),
     );
   }
-  
-  Widget _buildQuickActions() {
-    final actions = [
-      {
-        'icon': Icons.mic_rounded,
-        'label': '语音提醒',
-        'color': const Color(0xFF3B82F6),
-        'onTap': () => setState(() => _selectedIndex = 1),
-      },
-      {
-        'icon': Icons.checklist_rounded,
-        'label': '待办事项',
-        'color': const Color(0xFF10B981),
-        'onTap': () => setState(() => _selectedIndex = 2),
-      },
-      {
-        'icon': Icons.record_voice_over_rounded,
-        'label': '语音录制',
-        'color': const Color(0xFFF59E0B),
-        'onTap': () => _showVoiceRecording(),
-      },
-      {
-        'icon': Icons.settings_rounded,
-        'label': '设置',
-        'color': const Color(0xFF8B5CF6),
-        'onTap': () => setState(() => _selectedIndex = 3),
-      },
-    ];
-    
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.3,
-      ),
-      itemCount: actions.length,
-      itemBuilder: (context, index) {
-        final action = actions[index];
-        return _buildActionCard(
-          icon: action['icon'] as IconData,
-          label: action['label'] as String,
-          color: action['color'] as Color,
-          onTap: action['onTap'] as VoidCallback,
-        );
-      },
+
+  Widget _buildStat(String value, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textSecondary,
+            letterSpacing: 1.0,
+          ),
+        ),
+      ],
     );
   }
-  
-  Widget _buildActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+
+  Widget _buildQuickActions() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.5,
+      children: [
+        _buildActionCard(
+          '语音',
+          Icons.mic_none,
+          () => setState(() => _selectedIndex = 1),
+        ),
+        _buildActionCard(
+          '任务',
+          Icons.check_box_outlined,
+          () => setState(() => _selectedIndex = 2),
+        ),
+        _buildActionCard(
+          '录音',
+          Icons.graphic_eq,
+          _showVoiceRecording,
+        ),
+        _buildActionCard(
+          '设置',
+          Icons.settings_outlined,
+          () => setState(() => _selectedIndex = 3),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(String label, IconData icon, VoidCallback onTap) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        hoverColor: AppTheme.surfaceHighlight,
         child: Container(
-          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppTheme.border),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, size: 28, color: color),
-              ),
+              Icon(icon, color: AppTheme.textPrimary, size: 28),
               const SizedBox(height: 12),
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1E293B),
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 1.0,
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -324,337 +249,161 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  
-  Widget _buildSettingsPage() {
-    return const SettingsPage();
-  }
-  
+
   Widget _buildBottomNav() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        color: AppTheme.background,
+        border: Border(top: BorderSide(color: AppTheme.border)),
       ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home_rounded, '首页', 0),
-              _buildNavItem(Icons.mic_rounded, '提醒', 1),
-              _buildNavItem(Icons.checklist_rounded, '待办', 2),
-              _buildNavItem(Icons.person_rounded, '我的', 3),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isSelected = _selectedIndex == index;
-    final color = isSelected ? const Color(0xFF3B82F6) : const Color(0xFF94A3B8);
-    
-    return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: color,
-              ),
-            ),
+            _buildNavItem(Icons.grid_view, 0),
+            _buildNavItem(Icons.mic_none, 1),
+            _buildNavItem(Icons.check_box_outlined, 2),
+            _buildNavItem(Icons.settings_outlined, 3),
           ],
         ),
       ),
     );
   }
-  
+
+  Widget _buildNavItem(IconData icon, int index) {
+    final isSelected = _selectedIndex == index;
+    return IconButton(
+      onPressed: () => setState(() => _selectedIndex = index),
+      icon: Icon(
+        icon,
+        color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+        size: 24,
+      ),
+      style: IconButton.styleFrom(
+        hoverColor: AppTheme.surfaceHighlight,
+      ),
+    );
+  }
+
   void _showVoiceRecording() {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => _VoiceRecordingModal(),
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (context) => const _VoiceRecordingDialog(),
     );
   }
 }
 
-class _VoiceRecordingModal extends StatefulWidget {
+class _VoiceRecordingDialog extends StatefulWidget {
+  const _VoiceRecordingDialog();
+
   @override
-  State<_VoiceRecordingModal> createState() => _VoiceRecordingModalState();
+  State<_VoiceRecordingDialog> createState() => _VoiceRecordingDialogState();
 }
 
-class _VoiceRecordingModalState extends State<_VoiceRecordingModal>
-    with TickerProviderStateMixin {
+class _VoiceRecordingDialogState extends State<_VoiceRecordingDialog>
+    with SingleTickerProviderStateMixin {
   bool _isRecording = false;
-  bool _isProcessing = false;
-  String _recordedText = '';
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+    _controller = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 1000),
     );
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // 拖拽指示器
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE2E8F0),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          // 标题
-          Text(
-            '语音录制',
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _isRecording 
-                ? '正在录制，请说话...' 
-                : _isProcessing 
-                    ? '正在处理录音...'
-                    : '点击下方按钮开始录制',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: const Color(0xFF475569),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 40),
-          
-          // 录音按钮
-          Expanded(
-            child: Center(
-              child: GestureDetector(
-                onTap: _toggleRecording,
-                child: AnimatedBuilder(
-                  animation: _pulseAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _isRecording ? _pulseAnimation.value : 1.0,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: _isRecording
-                                ? [const Color(0xFFEF4444), const Color(0xFFF87171)]
-                                : [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: (_isRecording 
-                                  ? const Color(0xFFEF4444) 
-                                  : const Color(0xFFF59E0B)).withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-          
-          // 录音结果
-          if (_recordedText.isNotEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '识别结果:',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF475569),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _recordedText,
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: const Color(0xFF1E293B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          
-          // 操作按钮
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    '取消',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _recordedText.isNotEmpty ? _saveRecording : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    '保存',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   void _toggleRecording() {
     setState(() {
+      _isRecording = !_isRecording;
       if (_isRecording) {
-        _stopRecording();
+        _controller.repeat(reverse: true);
       } else {
-        _startRecording();
+        _controller.stop();
+        _controller.reset();
+        // Mock save after delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          Navigator.pop(context);
+        });
       }
     });
   }
 
-  void _startRecording() {
-    _isRecording = true;
-    _pulseController.repeat(reverse: true);
-    
-    // 模拟录音过程
-    Future.delayed(const Duration(seconds: 3), () {
-      if (_isRecording) {
-        _stopRecording();
-      }
-    });
-  }
-
-  void _stopRecording() {
-    _isRecording = false;
-    _isProcessing = true;
-    _pulseController.stop();
-    
-    // 模拟语音识别处理
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isProcessing = false;
-        _recordedText = '明天上午9点提醒我开会'; // 模拟识别结果
-      });
-    });
-  }
-
-  void _saveRecording() {
-    // TODO: 保存录音结果，可以创建提醒或待办
-    Navigator.pop(context);
-    
-    // 显示成功提示
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('语音备忘已保存'),
-        backgroundColor: const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: AppTheme.primary, width: 2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(48),
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _isRecording ? '正在录音...' : '准备就绪',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
+                color: _isRecording ? AppTheme.primary : AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 48),
+            GestureDetector(
+              onTap: _toggleRecording,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isRecording
+                            ? AppTheme.primary
+                                .withOpacity(1.0 - _controller.value * 0.5)
+                            : AppTheme.textSecondary,
+                        width: 2,
+                      ),
+                      color: _isRecording
+                          ? AppTheme.primary.withOpacity(0.2)
+                          : null,
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: _isRecording
+                              ? AppTheme.primary
+                              : AppTheme.textSecondary,
+                          shape: _isRecording
+                              ? BoxShape.rectangle
+                              : BoxShape.circle,
+                          borderRadius:
+                              _isRecording ? BorderRadius.circular(2) : null,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

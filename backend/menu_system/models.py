@@ -100,6 +100,9 @@ class VoiceReminder(Base):
     reminder_type = Column(String(32), default='ai_voice')  # 'system', 'ai_voice', 'custom_audio'
     voice_model = Column(String(32), default='tts-1')  # 'tts-1', 'tts-1-hd'
     audio_file_path = Column(String(512))  # Path to custom audio file
+    is_preset = Column(Boolean, default=False)
+    use_fade_in = Column(Boolean, default=False)
+    fade_in_duration = Column(Integer, default=5)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

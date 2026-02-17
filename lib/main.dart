@@ -32,7 +32,7 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 初始化时区数据
   try {
     tz.initializeTimeZones();
@@ -41,7 +41,7 @@ void main() async {
   } catch (e) {
     print('❌ 时区初始化失败: $e');
   }
-  
+
   try {
     // 初始化 Hive
     await Hive.initFlutter();
@@ -49,16 +49,17 @@ void main() async {
   } catch (e) {
     print('❌ Hive 初始化失败: $e');
   }
-  
+
   try {
     // 检查网络连接
     print('🌐 开始网络连接检查...');
     final hasNetwork = await NetworkService.instance.checkConnection();
     if (hasNetwork) {
       print('✅ 网络连接正常');
-      
+
       // 检查服务器连接
-      final hasServerConnection = await NetworkService.instance.checkServerConnection('https://service.muhuo.site');
+      final hasServerConnection = await NetworkService.instance
+          .checkServerConnection('https://service.muhuo.site');
       if (hasServerConnection) {
         print('✅ 服务器连接正常');
       } else {
@@ -70,12 +71,12 @@ void main() async {
   } catch (e) {
     print('❌ 网络检查失败: $e');
   }
-  
+
   try {
     // 初始化 API 服务
     await ApiService.instance.initialize(baseUrl: 'https://service.muhuo.site');
     print('✅ API 服务初始化成功');
-    
+
     // 测试 API 连接
     final isConnected = await ApiService.instance.healthCheck();
     if (isConnected) {
@@ -87,7 +88,7 @@ void main() async {
     print('❌ API 服务初始化失败: $e');
     print('⚠️ 应用将在离线模式下运行');
   }
-  
+
   try {
     // 初始化混合通知服务（包含完整的 Web Push 系统）
     await HybridNotificationService.instance.initialize();
@@ -95,7 +96,7 @@ void main() async {
   } catch (e) {
     print('❌ 混合通知服务初始化失败: $e');
   }
-  
+
   try {
     // 初始化通知服务
     await NotificationService.instance.initialize();
@@ -103,7 +104,7 @@ void main() async {
   } catch (e) {
     print('❌ 通知服务初始化失败: $e');
   }
-  
+
   try {
     // 初始化语音服务
     await VoiceService.instance.initialize();
@@ -111,7 +112,7 @@ void main() async {
   } catch (e) {
     print('❌ 语音服务初始化失败: $e');
   }
-  
+
   try {
     // 初始化提醒调度服务
     await ReminderSchedulerService.instance.initialize();
@@ -119,12 +120,12 @@ void main() async {
   } catch (e) {
     print('❌ 提醒调度服务初始化失败: $e');
   }
-  
+
   // 初始化后台任务 - 只在非 Web 环境
   if (!kIsWeb) {
     try {
       await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
-      
+
       // 注册周期性任务（每15分钟检查一次）
       await Workmanager().registerPeriodicTask(
         'voice-reminder-check',
@@ -136,7 +137,7 @@ void main() async {
       print('❌ 后台任务初始化失败: $e');
     }
   }
-  
+
   try {
     // 设置状态栏样式
     SystemChrome.setSystemUIOverlayStyle(
@@ -149,7 +150,7 @@ void main() async {
   } catch (e) {
     print('❌ 状态栏样式设置失败: $e');
   }
-  
+
   print('🚀 应用启动中...');
   runApp(const MyApp());
 }
@@ -169,13 +170,18 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'VoiceFlow - 智能语音助手',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
+        theme: AppTheme.darkTheme,
         home: const SafeHomePage(),
         builder: (context, child) {
-          // 添加错误边界
+          // 添加错误边界 和 最大宽度限制
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-            child: child ?? const SizedBox(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1440),
+                child: child ?? const SizedBox(),
+              ),
+            ),
           );
         },
       ),
@@ -198,7 +204,7 @@ class _SafeHomePageState extends State<SafeHomePage> {
   void initState() {
     super.initState();
     _initializeApp();
-    
+
     // Web 环境：处理 autoSpeak 参数
     if (kIsWeb) {
       _handleAutoSpeak();
@@ -207,25 +213,25 @@ class _SafeHomePageState extends State<SafeHomePage> {
 
   void _handleAutoSpeak() {
     if (!kIsWeb) return;
-    
+
     try {
       // Web-only code using js interop
       final href = Uri.base.toString();
       final uri = Uri.parse(href);
       final autoSpeak = uri.queryParameters['autoSpeak'];
-      
+
       if (autoSpeak != null && autoSpeak.isNotEmpty) {
         print('🔊 检测到 autoSpeak 参数: $autoSpeak');
-        
+
         // 延迟播放，确保语音服务已初始化
         Future.delayed(const Duration(seconds: 2), () async {
           try {
             // 解锁语音服务
             HybridNotificationService.instance.unlockVoiceService();
-            
+
             // 播放语音
             await HybridNotificationService.instance.speakReminder(autoSpeak);
-            
+
             // 清除 URL 参数 - 仅在 Web 环境
             if (kIsWeb) {
               // Use Flutter's built-in navigation instead of direct HTML manipulation
@@ -244,10 +250,11 @@ class _SafeHomePageState extends State<SafeHomePage> {
   Future<void> _initializeApp() async {
     try {
       // 延迟初始化 Provider
-      final provider = Provider.of<VoiceReminderProvider>(context, listen: false);
+      final provider =
+          Provider.of<VoiceReminderProvider>(context, listen: false);
       await provider.initialize();
       print('✅ VoiceReminderProvider 初始化成功');
-      
+
       // Web 环境：设置用户交互监听器
       if (kIsWeb) {
         _setupWebInteractionListeners();
@@ -263,7 +270,7 @@ class _SafeHomePageState extends State<SafeHomePage> {
 
   void _setupWebInteractionListeners() {
     if (!kIsWeb) return;
-    
+
     // For web, we'll use Flutter's gesture detection instead of direct HTML manipulation
     // The voice service will be unlocked through user interaction in the UI
     print('✅ Web 交互监听器已设置（通过 Flutter UI）');

@@ -2628,7 +2628,9 @@ def reminder_scheduler_task():
                                 send_web_push(sub, {
                                     'title': '食材过期提醒',
                                     'body': r.content,
-                                    'type': 'voice_reminder'
+                                    'type': 'voice_reminder',
+                                    'audioUrl': getattr(r, 'audio_file_path', None),
+                                    'fadeInDuration': getattr(r, 'fade_in_duration', 5) if getattr(r, 'use_fade_in', False) else 0
                                 })
             
             time.sleep(10)

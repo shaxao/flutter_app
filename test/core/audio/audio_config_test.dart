@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import '../../../lib/core/audio/audio_config.dart';
+import '../../../lib/core/audio/cache_management_system.dart';
 
 void main() {
   group('AudioConfig', () {
     test('应该创建默认配置', () {
       final config = AudioConfig.defaultConfig();
-      
+
       expect(config.voice, equals('default'));
       expect(config.rate, equals(1.0));
       expect(config.pitch, equals(1.0));
@@ -18,7 +19,7 @@ void main() {
 
     test('应该创建高质量配置', () {
       final config = AudioConfig.highQuality();
-      
+
       expect(config.voice, equals('premium'));
       expect(config.rate, equals(0.9));
       expect(config.quality, equals(5));
@@ -28,7 +29,7 @@ void main() {
 
     test('应该创建快速配置', () {
       final config = AudioConfig.fast();
-      
+
       expect(config.rate, equals(1.2));
       expect(config.quality, equals(1));
       expect(config.isValid(), isTrue);
@@ -59,7 +60,7 @@ void main() {
     test('应该生成一致的配置哈希', () {
       final config1 = AudioConfig.defaultConfig();
       final config2 = AudioConfig.defaultConfig();
-      
+
       expect(config1.configHash, equals(config2.configHash));
       expect(config1.configHash.length, equals(12));
     });
@@ -67,7 +68,7 @@ void main() {
     test('不同配置应该生成不同哈希', () {
       final config1 = AudioConfig.defaultConfig();
       final config2 = config1.copyWith(rate: 1.5);
-      
+
       expect(config1.configHash, isNot(equals(config2.configHash)));
     });
 
@@ -115,7 +116,7 @@ void main() {
 
     test('应该处理JSON反序列化的默认值', () {
       final config = AudioConfig.fromJson({});
-      
+
       expect(config.voice, equals('default'));
       expect(config.rate, equals(1.0));
       expect(config.pitch, equals(1.0));
@@ -170,7 +171,7 @@ void main() {
   group('UserPreferences', () {
     test('应该创建默认偏好', () {
       final prefs = UserPreferences.defaultPreferences();
-      
+
       expect(prefs.preferredVoice, equals('default'));
       expect(prefs.preferredRate, equals(1.0));
       expect(prefs.preferredVolume, equals(0.8));
@@ -185,7 +186,7 @@ void main() {
     test('应该转换为AudioConfig', () {
       final prefs = UserPreferences.defaultPreferences();
       final audioConfig = prefs.toAudioConfig();
-      
+
       expect(audioConfig.voice, equals(prefs.preferredVoice));
       expect(audioConfig.rate, equals(prefs.preferredRate));
       expect(audioConfig.volume, equals(prefs.preferredVolume));
@@ -218,7 +219,10 @@ void main() {
         preferredLanguage: 'en-US',
         enablePreloading: false,
         preferredPlaybackMode: PlaybackMode.media,
-        playbackStrategies: [PlaybackStrategy.mediaSessionAudio, PlaybackStrategy.systemTTS],
+        playbackStrategies: [
+          PlaybackStrategy.mediaSessionAudio,
+          PlaybackStrategy.systemTTS
+        ],
         preferredFormat: AudioFormat.aac,
         preferredQuality: 4,
       );
@@ -231,7 +235,8 @@ void main() {
       expect(restored.preferredVolume, equals(original.preferredVolume));
       expect(restored.preferredLanguage, equals(original.preferredLanguage));
       expect(restored.enablePreloading, equals(original.enablePreloading));
-      expect(restored.preferredPlaybackMode, equals(original.preferredPlaybackMode));
+      expect(restored.preferredPlaybackMode,
+          equals(original.preferredPlaybackMode));
       expect(restored.playbackStrategies, equals(original.playbackStrategies));
       expect(restored.preferredFormat, equals(original.preferredFormat));
       expect(restored.preferredQuality, equals(original.preferredQuality));
@@ -241,7 +246,7 @@ void main() {
   group('CacheConfig', () {
     test('应该创建默认缓存配置', () {
       final config = CacheConfig.defaultConfig();
-      
+
       expect(config.maxMemoryCacheSize, equals(50));
       expect(config.maxDiskCacheSize, equals(200));
       expect(config.cacheExpiration, equals(const Duration(days: 7)));
@@ -265,9 +270,10 @@ void main() {
   group('PlaybackConfig', () {
     test('应该创建默认播放配置', () {
       final config = PlaybackConfig.defaultConfig();
-      
+
       expect(config.strategies.isNotEmpty, isTrue);
-      expect(config.strategies.first, equals(PlaybackStrategy.customNotificationSound));
+      expect(config.strategies.first,
+          equals(PlaybackStrategy.customNotificationSound));
       expect(config.maxRetryAttempts, equals(3));
       expect(config.retryDelay, equals(const Duration(seconds: 1)));
       expect(config.enableFallback, isTrue);
@@ -288,7 +294,7 @@ void main() {
   group('SystemConfig', () {
     test('应该创建默认系统配置', () {
       final config = SystemConfig.defaultConfig();
-      
+
       expect(config.defaultAudioConfig, isA<AudioConfig>());
       expect(config.cacheConfig, isA<CacheConfig>());
       expect(config.playbackConfig, isA<PlaybackConfig>());
@@ -300,9 +306,12 @@ void main() {
       final json = original.toJson();
       final restored = SystemConfig.fromJson(json);
 
-      expect(restored.defaultAudioConfig.voice, equals(original.defaultAudioConfig.voice));
-      expect(restored.cacheConfig.maxMemoryCacheSize, equals(original.cacheConfig.maxMemoryCacheSize));
-      expect(restored.playbackConfig.maxRetryAttempts, equals(original.playbackConfig.maxRetryAttempts));
+      expect(restored.defaultAudioConfig.voice,
+          equals(original.defaultAudioConfig.voice));
+      expect(restored.cacheConfig.maxMemoryCacheSize,
+          equals(original.cacheConfig.maxMemoryCacheSize));
+      expect(restored.playbackConfig.maxRetryAttempts,
+          equals(original.playbackConfig.maxRetryAttempts));
     });
   });
 
@@ -317,7 +326,7 @@ void main() {
     test('应该返回默认配置', () {
       final systemConfig = manager.systemConfig;
       final userPrefs = manager.userPreferences;
-      
+
       expect(systemConfig, isA<SystemConfig>());
       expect(userPrefs, isA<UserPreferences>());
     });
@@ -325,7 +334,7 @@ void main() {
     test('应该更新系统配置', () {
       final newConfig = SystemConfig.defaultConfig();
       manager.updateSystemConfig(newConfig);
-      
+
       expect(manager.systemConfig, equals(newConfig));
     });
 
@@ -334,26 +343,26 @@ void main() {
         preferredVoice: 'updated-voice',
       );
       manager.updateUserPreferences(newPrefs);
-      
+
       expect(manager.userPreferences.preferredVoice, equals('updated-voice'));
     });
 
     test('应该获取当前音频配置', () {
       final audioConfig = manager.getCurrentAudioConfig();
-      
+
       expect(audioConfig, isA<AudioConfig>());
       expect(audioConfig.isValid(), isTrue);
     });
 
     test('应该验证配置', () {
       expect(manager.validateConfig(), isTrue);
-      
+
       // 设置无效配置
       final invalidPrefs = UserPreferences.defaultPreferences().copyWith(
         preferredRate: 5.0, // 无效的语速
       );
       manager.updateUserPreferences(invalidPrefs);
-      
+
       expect(manager.validateConfig(), isFalse);
     });
 
@@ -363,16 +372,16 @@ void main() {
         preferredVoice: 'custom',
       );
       manager.updateUserPreferences(customPrefs);
-      
+
       // 重置
       manager.resetToDefaults();
-      
+
       expect(manager.userPreferences.preferredVoice, equals('default'));
     });
 
     test('应该返回配置统计信息', () {
       final stats = manager.getConfigStatistics();
-      
+
       expect(stats['audioConfig'], isA<Map<String, dynamic>>());
       expect(stats['cacheConfig'], isA<Map<String, dynamic>>());
       expect(stats['playbackConfig'], isA<Map<String, dynamic>>());
@@ -383,7 +392,7 @@ void main() {
     test('ConfigManager应该是单例', () {
       final manager1 = ConfigManager();
       final manager2 = ConfigManager();
-      
+
       expect(identical(manager1, manager2), isTrue);
     });
   });
@@ -398,7 +407,8 @@ void main() {
 
     test('PlaybackStrategy应该有正确的值', () {
       expect(PlaybackStrategy.values.length, equals(6));
-      expect(PlaybackStrategy.values, contains(PlaybackStrategy.customNotificationSound));
+      expect(PlaybackStrategy.values,
+          contains(PlaybackStrategy.customNotificationSound));
       expect(PlaybackStrategy.values, contains(PlaybackStrategy.systemTTS));
     });
   });

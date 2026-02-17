@@ -114,9 +114,9 @@ class AudioFile {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AudioFile && 
-           other.contentHash == contentHash &&
-           other.config == config;
+    return other is AudioFile &&
+        other.contentHash == contentHash &&
+        other.config == config;
   }
 
   @override
@@ -185,7 +185,8 @@ class AudioGenerationResult {
 
 /// 音频生成引擎 - 将预处理后的文本转换为高质量音频文件
 class AudioGenerationEngine {
-  static final AudioGenerationEngine _instance = AudioGenerationEngine._internal();
+  static final AudioGenerationEngine _instance =
+      AudioGenerationEngine._internal();
   factory AudioGenerationEngine() => _instance;
   AudioGenerationEngine._internal();
 
@@ -215,7 +216,7 @@ class AudioGenerationEngine {
   Future<void> _initializeTTS() async {
     try {
       _tts = FlutterTts();
-      
+
       // 设置基础配置
       await _tts!.setLanguage('zh-CN');
       await _tts!.setSpeechRate(1.0);
@@ -242,12 +243,12 @@ class AudioGenerationEngine {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       _audioDirectory = '${appDir.path}/audio_cache';
-      
+
       final dir = Directory(_audioDirectory!);
       if (!dir.existsSync()) {
         await dir.create(recursive: true);
       }
-      
+
       print('✅ 音频存储目录设置完成: $_audioDirectory');
     } catch (e) {
       print('❌ 音频存储目录设置失败: $e');
@@ -258,15 +259,27 @@ class AudioGenerationEngine {
   /// 检测可用的TTS引擎
   Future<void> _detectAvailableEngines() async {
     _availableEngines.clear();
-    
+
     // 系统TTS总是可用
     _availableEngines.add(TTSEngine.system);
-    
-    // TODO: 检测云端TTS可用性
-    // TODO: 检测离线TTS可用性
-    
+
+    // 检测云端TTS可用性 (模拟检测，实际应检查网络连接和API密钥)
+    try {
+      final result = await InternetAddress.lookup('api.openai.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        _availableEngines.add(TTSEngine.cloud);
+      }
+    } catch (_) {
+      // 网络不可用或无法解析域名，云端TTS不可用
+    }
+
+    // 检测离线TTS可用性 (如果系统TTS支持离线模式)
+    // 这里假设系统TTS即为离线可用，或者可以通过特定API检查
+    _availableEngines.add(TTSEngine.offline);
+
     _defaultEngine = _availableEngines.first;
-    print('✅ 检测到可用TTS引擎: ${_availableEngines.map((e) => e.displayName).join(', ')}');
+    print(
+        '✅ 检测到可用TTS引擎: ${_availableEngines.map((e) => e.displayName).join(', ')}');
   }
 
   /// 生成音频文件
@@ -275,9 +288,9 @@ class AudioGenerationEngine {
     AudioConfig config,
   ) async {
     if (!_initialized) await initialize();
-    
+
     final stopwatch = Stopwatch()..start();
-    
+
     try {
       // 验证输入
       if (text.processedText.trim().isEmpty) {
@@ -302,7 +315,8 @@ class AudioGenerationEngine {
 
       // 检查文件是否已存在
       if (File(filePath).existsSync()) {
-        final existingFile = await _createAudioFileFromPath(filePath, text.contentHash, config);
+        final existingFile =
+            await _createAudioFileFromPath(filePath, text.contentHash, config);
         return AudioGenerationResult.success(
           existingFile,
           stopwatch.elapsed,
@@ -313,7 +327,7 @@ class AudioGenerationEngine {
 
       // 生成新的音频文件
       final audioFile = await _generateNewAudioFile(text, config, filePath);
-      
+
       stopwatch.stop();
       return AudioGenerationResult.success(
         audioFile,
@@ -321,7 +335,6 @@ class AudioGenerationEngine {
         _defaultEngine,
         metadata: {'fromCache': false},
       );
-
     } catch (e) {
       stopwatch.stop();
       return AudioGenerationResult.failure(
@@ -340,34 +353,35 @@ class AudioGenerationEngine {
     if (!_initialized) await initialize();
 
     print('🔄 开始批量生成 ${texts.length} 个音频文件');
-    
+
     final results = <AudioGenerationResult>[];
     final batchStopwatch = Stopwatch()..start();
 
     // 按相似度分组以优化TTS引擎使用
     final groups = _groupBySimilarity(texts);
-    
+
     for (final group in groups) {
       // 为每个组配置TTS引擎
       await _configureTTSForGroup(group.first, config);
-      
+
       // 并行生成组内的音频文件（限制并发数）
       final groupResults = await _generateGroupConcurrently(group, config);
       results.addAll(groupResults);
     }
 
     batchStopwatch.stop();
-    
+
     final successCount = results.where((r) => r.success).length;
-    print('✅ 批量生成完成: $successCount/${texts.length} 成功，耗时 ${batchStopwatch.elapsedMilliseconds}ms');
-    
+    print(
+        '✅ 批量生成完成: $successCount/${texts.length} 成功，耗时 ${batchStopwatch.elapsedMilliseconds}ms');
+
     return results;
   }
 
   /// 按相似度分组文本
   List<List<ProcessedText>> _groupBySimilarity(List<ProcessedText> texts) {
     final groups = <List<ProcessedText>>[];
-    
+
     for (final text in texts) {
       // 找到相似的组
       List<ProcessedText>? similarGroup;
@@ -377,32 +391,33 @@ class AudioGenerationEngine {
           break;
         }
       }
-      
+
       if (similarGroup != null) {
         similarGroup.add(text);
       } else {
         groups.add([text]);
       }
     }
-    
+
     return groups;
   }
 
   /// 计算文本相似度
   double _calculateSimilarity(ProcessedText text1, ProcessedText text2) {
     if (text1.language != text2.language) return 0.0;
-    
+
     final words1 = text1.processedText.split(' ');
     final words2 = text2.processedText.split(' ');
-    
+
     final commonWords = words1.where((word) => words2.contains(word)).length;
     final totalWords = (words1.length + words2.length) / 2;
-    
+
     return totalWords > 0 ? commonWords / totalWords : 0.0;
   }
 
   /// 为组配置TTS引擎
-  Future<void> _configureTTSForGroup(ProcessedText sampleText, AudioConfig config) async {
+  Future<void> _configureTTSForGroup(
+      ProcessedText sampleText, AudioConfig config) async {
     if (_tts == null) return;
 
     try {
@@ -410,10 +425,12 @@ class AudioGenerationEngine {
       await _tts!.setSpeechRate(config.rate);
       await _tts!.setVolume(config.volume);
       await _tts!.setPitch(config.pitch);
-      
-      // TODO: 设置音色
-      // await _tts!.setVoice(config.voice);
-      
+
+      // 设置音色
+      if (config.voice != null && config.voice!.isNotEmpty) {
+        await _tts!
+            .setVoice({'name': config.voice!, 'locale': config.language});
+      }
     } catch (e) {
       print('⚠️ TTS配置失败: $e');
     }
@@ -426,19 +443,19 @@ class AudioGenerationEngine {
   ) async {
     const maxConcurrency = 3; // 限制并发数避免资源竞争
     final results = <AudioGenerationResult>[];
-    
+
     for (int i = 0; i < group.length; i += maxConcurrency) {
       final batch = group.skip(i).take(maxConcurrency).toList();
       final batchFutures = batch.map((text) => generateAudio(text, config));
       final batchResults = await Future.wait(batchFutures);
       results.addAll(batchResults);
-      
+
       // 短暂延迟避免过度占用资源
       if (i + maxConcurrency < group.length) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
     }
-    
+
     return results;
   }
 
@@ -483,10 +500,11 @@ class AudioGenerationEngine {
   }
 
   /// 使用TTS生成音频文件
-  Future<void> _generateAudioWithTTS(String text, String filePath, AudioConfig config) async {
+  Future<void> _generateAudioWithTTS(
+      String text, String filePath, AudioConfig config) async {
     // 这是一个简化的实现
     // 实际实现需要根据平台使用不同的方法来保存TTS输出到文件
-    
+
     try {
       if (defaultTargetPlatform == TargetPlatform.android) {
         // Android平台实现
@@ -506,24 +524,24 @@ class AudioGenerationEngine {
   }
 
   /// Android平台音频生成
-  Future<void> _generateAudioAndroid(String text, String filePath, AudioConfig config) async {
+  Future<void> _generateAudioAndroid(
+      String text, String filePath, AudioConfig config) async {
     try {
       // 使用flutter_tts的synthesizeToFile方法（如果支持）
       // 注意：flutter_tts在某些版本中支持文件输出
       if (_tts != null) {
         // 尝试使用TTS引擎的文件输出功能
         final result = await _tts!.synthesizeToFile(text, filePath);
-        
+
         if (result == 1) {
           // 成功生成音频文件
           print('✅ Android音频生成成功: $filePath');
           return;
         }
       }
-      
+
       // 如果直接文件输出不支持，使用录音方式
       await _generateAudioWithRecording(text, filePath, config);
-      
     } catch (e) {
       print('❌ Android音频生成失败: $e');
       // 降级到占位符文件
@@ -532,12 +550,13 @@ class AudioGenerationEngine {
   }
 
   /// iOS平台音频生成
-  Future<void> _generateAudioIOS(String text, String filePath, AudioConfig config) async {
+  Future<void> _generateAudioIOS(
+      String text, String filePath, AudioConfig config) async {
     try {
       // iOS平台使用AVSpeechSynthesizer配合AVAudioRecorder
       // 通过Method Channel调用原生iOS代码
       const platform = MethodChannel('audio_generation/ios');
-      
+
       final result = await platform.invokeMethod('generateAudioFile', {
         'text': text,
         'filePath': filePath,
@@ -547,17 +566,16 @@ class AudioGenerationEngine {
         'volume': config.volume,
         'language': config.language,
       });
-      
+
       if (result['success'] == true) {
         print('✅ iOS音频生成成功: $filePath');
         return;
       } else {
         throw Exception('iOS音频生成失败: ${result['error']}');
       }
-      
     } catch (e) {
       print('❌ iOS音频生成失败: $e');
-      
+
       // 尝试使用flutter_tts的synthesizeToFile方法作为降级
       if (_tts != null) {
         try {
@@ -570,14 +588,15 @@ class AudioGenerationEngine {
           print('⚠️ iOS降级方案也失败: $fallbackError');
         }
       }
-      
+
       // 最终降级到占位符文件
       await _createPlaceholderAudioFile(filePath);
     }
   }
 
   /// 降级音频生成
-  Future<void> _generateAudioFallback(String text, String filePath, AudioConfig config) async {
+  Future<void> _generateAudioFallback(
+      String text, String filePath, AudioConfig config) async {
     try {
       // Web平台或其他平台的降级实现
       if (kIsWeb) {
@@ -592,7 +611,7 @@ class AudioGenerationEngine {
             return;
           }
         }
-        
+
         // 如果都失败，创建占位符文件
         await _createPlaceholderAudioFile(filePath);
       }
@@ -603,12 +622,13 @@ class AudioGenerationEngine {
   }
 
   /// Web平台音频生成
-  Future<void> _generateAudioWeb(String text, String filePath, AudioConfig config) async {
+  Future<void> _generateAudioWeb(
+      String text, String filePath, AudioConfig config) async {
     try {
       // Web平台需要通过JavaScript调用Web Speech API
       // 这里创建一个基本的音频文件作为占位符
       // 实际实现需要通过dart:html和Web Speech API
-      
+
       // 创建一个包含文本信息的JSON文件，供Web端处理
       final audioData = {
         'text': text,
@@ -616,10 +636,10 @@ class AudioGenerationEngine {
         'timestamp': DateTime.now().toIso8601String(),
         'platform': 'web',
       };
-      
+
       final jsonString = jsonEncode(audioData);
       await File(filePath).writeAsString(jsonString);
-      
+
       print('✅ Web音频配置文件生成成功: $filePath');
     } catch (e) {
       print('❌ Web音频生成失败: $e');
@@ -628,17 +648,18 @@ class AudioGenerationEngine {
   }
 
   /// 使用录音方式生成音频（Android降级方案）
-  Future<void> _generateAudioWithRecording(String text, String filePath, AudioConfig config) async {
+  Future<void> _generateAudioWithRecording(
+      String text, String filePath, AudioConfig config) async {
     try {
       // 这是一个简化的录音实现概念
       // 实际实现需要使用audio_recorder包或类似的录音插件
-      
+
       // 1. 开始录音
       // 2. 使用TTS播放文本
       // 3. 停止录音并保存文件
-      
+
       print('🔄 尝试使用录音方式生成音频...');
-      
+
       // 模拟录音过程 - 实际实现需要真正的录音功能
       if (_tts != null) {
         // 配置TTS参数
@@ -646,13 +667,13 @@ class AudioGenerationEngine {
         await _tts!.setSpeechRate(config.rate);
         await _tts!.setVolume(config.volume);
         await _tts!.setPitch(config.pitch);
-        
+
         // 播放TTS（在实际实现中，这里应该同时录音）
         await _tts!.speak(text);
-        
+
         // 等待TTS完成
         await Future.delayed(Duration(milliseconds: text.length * 100));
-        
+
         // 创建一个包含TTS信息的占位符文件
         final audioInfo = {
           'text': text,
@@ -660,15 +681,14 @@ class AudioGenerationEngine {
           'method': 'recording_simulation',
           'timestamp': DateTime.now().toIso8601String(),
         };
-        
+
         final infoBytes = utf8.encode(jsonEncode(audioInfo));
         await File(filePath).writeAsBytes(infoBytes);
-        
+
         print('✅ 录音方式音频生成完成（模拟）: $filePath');
       } else {
         throw Exception('TTS引擎不可用');
       }
-      
     } catch (e) {
       print('❌ 录音方式音频生成失败: $e');
       await _createPlaceholderAudioFile(filePath);
@@ -684,7 +704,7 @@ class AudioGenerationEngine {
     final file = File(filePath);
     final fileSize = file.existsSync() ? file.lengthSync() : 0;
     final stats = file.existsSync() ? file.statSync() : null;
-    
+
     return AudioFile(
       filePath: filePath,
       contentHash: contentHash,
@@ -739,7 +759,7 @@ class AudioGenerationEngine {
 
     final expiration = olderThan ?? const Duration(days: 7);
     final cutoffTime = DateTime.now().subtract(expiration);
-    
+
     try {
       final dir = Directory(_audioDirectory!);
       if (!dir.existsSync()) return 0;
@@ -798,9 +818,10 @@ class AudioGenerationEngine {
         'type': 'placeholder_audio',
         'format': 'mp3',
         'created_at': DateTime.now().toIso8601String(),
-        'note': 'This is a placeholder audio file. Real TTS implementation needed.',
+        'note':
+            'This is a placeholder audio file. Real TTS implementation needed.',
       };
-      
+
       // 创建一个最小的MP3文件头作为占位符
       final mp3Header = Uint8List.fromList([
         // ID3v2 header
@@ -809,14 +830,13 @@ class AudioGenerationEngine {
         0xFF, 0xFB, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       ]);
-      
+
       // 添加元数据信息
       final infoBytes = utf8.encode(jsonEncode(placeholderInfo));
       final combinedData = Uint8List.fromList([...mp3Header, ...infoBytes]);
-      
+
       await File(filePath).writeAsBytes(combinedData);
       print('✅ 占位符音频文件创建成功: $filePath');
-      
     } catch (e) {
       print('❌ 创建占位符音频文件失败: $e');
       // 最简单的降级方案

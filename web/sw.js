@@ -172,13 +172,23 @@ self.addEventListener('push', (event) => {
   const broadcastPromise = (async () => {
     try {
       const channel = new BroadcastChannel('reminder-channel')
+      
+      // Wake up main thread
       channel.postMessage({
         type: 'PUSH_RECEIVED_WAKE_UP',
         payload: data,
         timestamp: Date.now()
       })
+      
+      // Trigger Audio Context Alarm
+      channel.postMessage({
+        type: 'PLAY_ALARM',
+        url: data.audioUrl || 'assets/audio/classic_alarm.mp3',
+        fadeInDuration: data.fadeInDuration || 5
+      })
+      
       channel.close()
-      console.log('[SW] BroadcastChannel message sent')
+      console.log('[SW] BroadcastChannel messages sent')
     } catch (e) {
       console.error('[SW] BroadcastChannel failed:', e)
     }

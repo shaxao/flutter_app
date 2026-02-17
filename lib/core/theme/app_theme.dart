@@ -1,221 +1,300 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// VoiceFlow 设计系统
-/// 风格: Micro-interactions - 简洁现代的语音助手
+/// VoiceFlow Premium Design System
+/// 风格: Void & Pulse - 极简黑白红
 class AppTheme {
-  // 配色方案 - 基于 ui-ux-pro-max 生成
-  static const Color primary = Color(0xFF3B82F6); // Fresh Blue
-  static const Color secondary = Color(0xFF60A5FA); // Light Blue
-  static const Color success = Color(0xFF10B981); // Green
-  static const Color warning = Color(0xFFF59E0B); // Amber
-  static const Color error = Color(0xFFEF4444); // Red
-  static const Color background = Color(0xFFF8FAFC); // Clean White
-  static const Color surface = Color(0xFFFFFFFF); // Pure White
-  static const Color textPrimary = Color(0xFF1E293B); // Dark Slate
-  static const Color textSecondary = Color(0xFF475569); // Medium Slate
-  static const Color textTertiary = Color(0xFF94A3B8); // Light Slate
-  
-  static ThemeData get lightTheme {
+  // 1. 核心色板
+  static const Color background = Color(0xFF000000); // 纯黑背景
+  static const Color surface = Color(0xFF1A1A1A); // 深灰表面
+  static const Color surfaceHighlight = Color(0xFF2A2A2A); // 高亮表面
+
+  static const Color primary = Color(0xFFFF0000); // 正红强调
+  static const Color primaryDark = Color(0xFF8B0000); // 深红
+  static const Color primaryLight = Color(0xFFFF3333); // 亮红
+
+  static const Color textPrimary = Color(0xFFFFFFFF); // 纯白文字
+  static const Color textSecondary = Color(0xFFA0A0A0); // 中灰文字
+  static const Color textDisabled = Color(0xFF404040); // 暗灰文字
+
+  static const Color border = Color(0xFF333333); // 边框色
+  static const Color success = Color(0xFF10B981); // Success Green
+  static const Color error =
+      Color(0xFFCF6679); // 错误色 (Material Standard for Dark)
+
+  // 2. 阴影 (Subtle Glows instead of traditional shadows)
+  static List<BoxShadow> get glowShadow => [
+        BoxShadow(
+          color: primary.withOpacity(0.15),
+          offset: const Offset(0, 0),
+          blurRadius: 20,
+          spreadRadius: 0,
+        ),
+      ];
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.5),
+          offset: const Offset(0, 4),
+          blurRadius: 12,
+          spreadRadius: 0,
+        ),
+      ];
+
+  static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      
-      // 配色
-      colorScheme: const ColorScheme.light(
+      brightness: Brightness.dark,
+
+      // 颜色方案
+      colorScheme: const ColorScheme.dark(
         primary: primary,
-        secondary: secondary,
-        surface: background,
+        secondary: primary, // Use red as secondary too for consistency
+        surface: surface,
+        background: background,
         error: error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: textPrimary,
+        onBackground: textPrimary,
+        onError: Colors.black,
       ),
-      
-      // 脚手架背景
+
+      // 背景色
       scaffoldBackgroundColor: background,
-      
-      // 字体系统 - Inter (简洁现代)
+      canvasColor: surface,
+
+      // 字体系统 - Inter
       textTheme: TextTheme(
-        // 大标题 - VoiceFlow
+        // 大标题 Display XL
         displayLarge: GoogleFonts.inter(
           fontSize: 48,
           fontWeight: FontWeight.w700,
           color: textPrimary,
-          letterSpacing: -0.02,
+          letterSpacing: -1.5,
           height: 1.1,
         ),
+        // 模块标题 Display L
         displayMedium: GoogleFonts.inter(
           fontSize: 36,
           fontWeight: FontWeight.w600,
           color: textPrimary,
-          letterSpacing: -0.01,
+          letterSpacing: -1.0,
+          height: 1.2,
         ),
-        displaySmall: GoogleFonts.inter(
-          fontSize: 28,
-          fontWeight: FontWeight.w600,
-          color: textPrimary,
-        ),
-        
-        // 标题
-        headlineLarge: GoogleFonts.inter(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          color: textPrimary,
-        ),
-        headlineMedium: GoogleFonts.inter(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: textPrimary,
-        ),
+        // 卡片标题 Title M
         headlineSmall: GoogleFonts.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontSize: 24,
+          fontWeight: FontWeight.w500,
           color: textPrimary,
+          letterSpacing: -0.5,
+          height: 1.3,
         ),
-        
-        // 正文
+        // 正文 Body L
         bodyLarge: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: textPrimary,
-          height: 1.5,
+          height: 1.6,
         ),
+        // 列表项 Body M
         bodyMedium: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w400,
-          color: textPrimary,
-          height: 1.4,
+          color:
+              textSecondary, // Default to secondary for body text to reduce contrast strain
+          height: 1.5,
         ),
-        bodySmall: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: textSecondary,
-          height: 1.3,
-        ),
-        
-        // 标签
-        labelLarge: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: textPrimary,
-        ),
-        labelMedium: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: textSecondary,
-        ),
+        // 标签 Label S
         labelSmall: GoogleFonts.inter(
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: textTertiary,
+          color: textSecondary,
+          letterSpacing: 0.5,
         ),
       ),
-      
+
       // AppBar
       appBarTheme: AppBarTheme(
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: background, // Merge with background
         foregroundColor: textPrimary,
+        centerTitle: false,
         titleTextStyle: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: textPrimary,
+          letterSpacing: -0.5,
         ),
+        iconTheme: const IconThemeData(color: textPrimary),
       ),
-      
-      // Card - 微交互设计
+
+      // Card - 极简边框风格
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(4), // Minimal rounding
+          side: const BorderSide(color: border, width: 1),
         ),
         color: surface,
-        shadowColor: Colors.black.withValues(alpha: 0.04),
+        margin: EdgeInsets.zero,
       ),
-      
-      // Button - 现代化按钮设计
+
+      // Button - 几何矩形
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2), // Almost sharp
           ),
           textStyle: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return Colors.white.withOpacity(0.1);
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return Colors.black.withOpacity(0.2);
+            }
+            return null;
+          }),
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          side: const BorderSide(color: primary, width: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(2),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ),
-      
-      // FloatingActionButton
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: textSecondary,
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ).copyWith(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return textPrimary; // Highlight on hover
+            }
+            return textSecondary;
+          }),
         ),
       ),
-      
+
       // Input
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        fillColor: const Color(0xFF111111),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(2)),
+          borderSide: BorderSide(color: border),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(2)),
+          borderSide: BorderSide(color: border),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primary, width: 2),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(2)),
+          borderSide: BorderSide(color: primary, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        labelStyle: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+        hintStyle: GoogleFonts.inter(color: textDisabled),
+        labelStyle: GoogleFonts.inter(color: textSecondary),
+      ),
+
+      // Dialog
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: const BorderSide(color: border, width: 1),
+        ),
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+        ),
+        contentTextStyle: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
           color: textSecondary,
         ),
       ),
-      
-      // Switch - 现代化开关
+
+      // Switch
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return Colors.white;
           }
-          return const Color(0xFFE2E8F0);
+          return textSecondary;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return primary;
           }
-          return const Color(0xFFE2E8F0);
+          return surfaceHighlight;
         }),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+      ),
+
+      // Divider
+      dividerTheme: const DividerThemeData(
+        color: border,
+        thickness: 1,
+        space: 1,
+      ),
+
+      // Icon
+      iconTheme: const IconThemeData(
+        color: textSecondary,
+        size: 24,
       ),
     );
   }
-  
-  // 优先级颜色
+
+  // 优先级颜色映射
   static Color getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
       case 'high':
-        return error;
+        return primary;
       case 'medium':
-        return warning;
+        return const Color(0xFFFF8C00); // Dark Orange for medium in dark mode
       case 'low':
-        return success;
+        return const Color(
+            0xFF00FF00); // Green for low (maybe adjust to fit theme?)
+      // Let's stick to the red theme:
+      // High = Red, Medium = White, Low = Grey? Or shades of red?
+      // Let's keep distinct colors for utility but desaturate them a bit or make them fit dark mode.
       default:
-        return textTertiary;
+        return textSecondary;
     }
   }
-  
-  // 微交互动画时长
-  static const Duration microAnimation = Duration(milliseconds: 100);
-  static const Duration shortAnimation = Duration(milliseconds: 200);
-  static const Duration mediumAnimation = Duration(milliseconds: 300);
+
+  // 动画时长
+  static const Duration fastAnimation = Duration(milliseconds: 100);
+  static const Duration normalAnimation = Duration(milliseconds: 200);
+  static const Duration slowAnimation = Duration(milliseconds: 300);
 }

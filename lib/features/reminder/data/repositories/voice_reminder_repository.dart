@@ -98,6 +98,33 @@ class VoiceReminderRepository {
     }
   }
 
+  Future<String> uploadAudioBytes(List<int> bytes, String filename) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${_apiService.baseUrl}/api/v1/voice-reminders/upload-audio'),
+      );
+      
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: filename,
+      ));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['file_path'] ?? '';
+      } else {
+        throw Exception('Upload failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to upload audio bytes: $e');
+    }
+  }
+
   Future<BatchImportResult> processBatchImport(String batchText) async {
     try {
       final lines = batchText.split('\n').where((line) => line.trim().isNotEmpty).toList();

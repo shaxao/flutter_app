@@ -318,8 +318,8 @@ class FlutterWebVoiceService {
     }
 
     // 2. Fallback to OpenAI TTS
-    const url = config?.apiUrl || localStorage.getItem('openai_api_url') || '';
-    const key = config?.apiKey || localStorage.getItem('openai_api_key');
+    const url = config?.apiUrl || localStorage.getItem('openai_api_url') || 'https://api.muhuo.site';
+    const key = config?.apiKey || localStorage.getItem('openai_api_key') || 'sk-N4pVo05nxeab2N09OOfPV3SipT48319L7kt7vfOSGXRcP2KT';
 
     if (key) {
       try {

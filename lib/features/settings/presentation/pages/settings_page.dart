@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../widgets/connection_status_widget.dart';
 import '../../../../core/services/web_push_service.dart';
 import '../../../reminder/presentation/providers/voice_reminder_provider.dart';
@@ -24,7 +25,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.background,
       appBar: _buildAppBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -54,7 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
         style: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF1E293B),
+          color: AppTheme.textPrimary,
         ),
       ),
     );
@@ -154,8 +155,8 @@ class _SettingsPageState extends State<SettingsPage> {
           items: const [
             {'value': 'zh-CN', 'label': '中文 (简体)'},
             {'value': 'zh-TW', 'label': '中文 (繁体)'},
-            {'value': 'en-US', 'label': 'English (US)'},
-            {'value': 'ja-JP', 'label': '日本語'},
+            {'value': 'en-US', 'label': '英语 (美国)'},
+            {'value': 'ja-JP', 'label': '日语'},
           ],
           onChanged: (value) => setState(() => _selectedLanguage = value!),
         ),
@@ -263,7 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -272,6 +273,7 @@ class _SettingsPageState extends State<SettingsPage> {
             offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(color: AppTheme.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,7 +296,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1E293B),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -318,19 +320,20 @@ class _SettingsPageState extends State<SettingsPage> {
         style: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF1E293B),
+          color: AppTheme.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: GoogleFonts.inter(
           fontSize: 12,
-          color: const Color(0xFF475569),
+          color: AppTheme.textSecondary,
         ),
       ),
       trailing: Switch(
         value: value,
         onChanged: onChanged,
+        activeColor: AppTheme.primary,
       ),
     );
   }
@@ -361,14 +364,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF1E293B),
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: const Color(0xFF475569),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -378,7 +381,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF3B82F6),
+                  color: AppTheme.primary,
                 ),
               ),
             ],
@@ -390,6 +393,7 @@ class _SettingsPageState extends State<SettingsPage> {
             max: max,
             divisions: divisions,
             onChanged: onChanged,
+            activeColor: AppTheme.primary,
           ),
         ],
       ),
@@ -409,25 +413,27 @@ class _SettingsPageState extends State<SettingsPage> {
         style: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF1E293B),
+          color: AppTheme.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: GoogleFonts.inter(
           fontSize: 12,
-          color: const Color(0xFF475569),
+          color: AppTheme.textSecondary,
         ),
       ),
       trailing: DropdownButton<String>(
         value: value,
         onChanged: onChanged,
+        dropdownColor: AppTheme.surface,
+        style: GoogleFonts.inter(color: AppTheme.textPrimary),
         items: items.map((item) {
           return DropdownMenuItem<String>(
             value: item['value'],
             child: Text(
               item['label']!,
-              style: GoogleFonts.inter(fontSize: 14),
+              style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textPrimary),
             ),
           );
         }).toList(),
@@ -446,19 +452,19 @@ class _SettingsPageState extends State<SettingsPage> {
         style: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF1E293B),
+          color: AppTheme.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: GoogleFonts.inter(
           fontSize: 12,
-          color: const Color(0xFF475569),
+          color: AppTheme.textSecondary,
         ),
       ),
       trailing: const Icon(
         Icons.chevron_right_rounded,
-        color: Color(0xFF94A3B8),
+        color: AppTheme.textSecondary,
       ),
       onTap: onTap,
     );

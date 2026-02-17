@@ -6,6 +6,9 @@ class VoiceReminder {
   final ReminderType reminderType;
   final String? voiceModel;
   final String? audioFilePath;
+  final bool isPreset; // Whether audio file is a system preset
+  final bool useFadeIn; // Whether to use fade-in effect
+  final int fadeInDuration; // Duration of fade-in in seconds
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -17,6 +20,9 @@ class VoiceReminder {
     this.reminderType = ReminderType.aiVoice,
     this.voiceModel = 'tts-1',
     this.audioFilePath,
+    this.isPreset = false,
+    this.useFadeIn = false,
+    this.fadeInDuration = 5,
     this.createdAt,
     this.updatedAt,
   });
@@ -30,6 +36,9 @@ class VoiceReminder {
       reminderType: ReminderType.fromString(json['reminder_type'] ?? 'ai_voice'),
       voiceModel: json['voice_model'],
       audioFilePath: json['audio_file_path'],
+      isPreset: json['is_preset'] ?? false,
+      useFadeIn: json['use_fade_in'] ?? false,
+      fadeInDuration: json['fade_in_duration'] ?? 5,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
     );
@@ -44,6 +53,9 @@ class VoiceReminder {
       'reminder_type': reminderType.value,
       'voice_model': voiceModel,
       'audio_file_path': audioFilePath,
+      'is_preset': isPreset,
+      'use_fade_in': useFadeIn,
+      'fade_in_duration': fadeInDuration,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -57,6 +69,9 @@ class VoiceReminder {
     ReminderType? reminderType,
     String? voiceModel,
     String? audioFilePath,
+    bool? isPreset,
+    bool? useFadeIn,
+    int? fadeInDuration,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -68,6 +83,9 @@ class VoiceReminder {
       reminderType: reminderType ?? this.reminderType,
       voiceModel: voiceModel ?? this.voiceModel,
       audioFilePath: audioFilePath ?? this.audioFilePath,
+      isPreset: isPreset ?? this.isPreset,
+      useFadeIn: useFadeIn ?? this.useFadeIn,
+      fadeInDuration: fadeInDuration ?? this.fadeInDuration,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

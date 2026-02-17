@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// 待办事项页面
 class TodoPage extends StatefulWidget {
@@ -44,7 +45,7 @@ class _TodoPageState extends State<TodoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.background,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -65,7 +66,7 @@ class _TodoPageState extends State<TodoPage> {
         style: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF1E293B),
+          color: AppTheme.textPrimary,
         ),
       ),
       actions: [
@@ -74,6 +75,7 @@ class _TodoPageState extends State<TodoPage> {
             // TODO: 语音添加待办
           },
           icon: const Icon(Icons.mic_rounded),
+          color: AppTheme.textPrimary,
           tooltip: '语音添加',
         ),
         IconButton(
@@ -81,6 +83,7 @@ class _TodoPageState extends State<TodoPage> {
             // TODO: 设置
           },
           icon: const Icon(Icons.more_vert_rounded),
+          color: AppTheme.textPrimary,
         ),
       ],
     );
@@ -158,15 +161,16 @@ class _TodoPageState extends State<TodoPage> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(color: AppTheme.border),
       ),
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -177,7 +181,7 @@ class _TodoPageState extends State<TodoPage> {
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1E293B),
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -191,7 +195,7 @@ class _TodoPageState extends State<TodoPage> {
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF475569),
+                color: AppTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -229,10 +233,10 @@ class _TodoPageState extends State<TodoPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: completed ? const Color(0xFFF8FAFC) : Colors.white,
+        color: completed ? AppTheme.surfaceHighlight : AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: completed ? const Color(0xFFE2E8F0) : priorityColor.withValues(alpha: 0.2),
+          color: completed ? AppTheme.border : priorityColor.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -273,7 +277,7 @@ class _TodoPageState extends State<TodoPage> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: completed ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
+                    color: completed ? AppTheme.textSecondary : AppTheme.textPrimary,
                     decoration: completed ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -283,7 +287,7 @@ class _TodoPageState extends State<TodoPage> {
                     description,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: completed ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -295,14 +299,14 @@ class _TodoPageState extends State<TodoPage> {
                         Icon(
                           Icons.schedule_rounded,
                           size: 14,
-                          color: completed ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                          color: AppTheme.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _formatDueDate(dueDate),
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: completed ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -312,8 +316,8 @@ class _TodoPageState extends State<TodoPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: completed 
-                              ? const Color(0xFFE2E8F0) 
-                              : priorityColor.withValues(alpha: 0.1),
+                              ? AppTheme.surfaceHighlight 
+                              : priorityColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -321,7 +325,7 @@ class _TodoPageState extends State<TodoPage> {
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: completed ? const Color(0xFF94A3B8) : priorityColor,
+                            color: completed ? AppTheme.textSecondary : priorityColor,
                           ),
                         ),
                       )),
@@ -334,6 +338,12 @@ class _TodoPageState extends State<TodoPage> {
           
           // 操作按钮
           PopupMenuButton<String>(
+            color: AppTheme.surface,
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: AppTheme.textSecondary,
+              size: 20,
+            ),
             onSelected: (value) {
               switch (value) {
                 case 'edit':
@@ -345,13 +355,13 @@ class _TodoPageState extends State<TodoPage> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit_rounded, size: 16),
-                    SizedBox(width: 8),
-                    Text('编辑'),
+                    Icon(Icons.edit_rounded, size: 16, color: AppTheme.textPrimary),
+                    const SizedBox(width: 8),
+                    Text('编辑', style: TextStyle(color: AppTheme.textPrimary)),
                   ],
                 ),
               ),
@@ -366,11 +376,6 @@ class _TodoPageState extends State<TodoPage> {
                 ),
               ),
             ],
-            child: Icon(
-              Icons.more_vert_rounded,
-              color: completed ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-              size: 20,
-            ),
           ),
         ],
       ),
